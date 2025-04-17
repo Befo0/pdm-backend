@@ -2,7 +2,6 @@ package main
 
 import (
 	"log"
-	"pdm-backend/repositories"
 	"pdm-backend/routes"
 
 	"github.com/gin-contrib/cors"
@@ -25,8 +24,6 @@ func main() {
 		AllowHeaders:     []string{"Content-Type"},
 		AllowCredentials: true,
 	}))
-
-	repositories.InitDB()
 
 	routes.UserRoutes(r)
 
