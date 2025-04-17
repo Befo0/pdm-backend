@@ -3,16 +3,23 @@ package middlewares
 import (
 	"net/http"
 	"pdm-backend/services"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
 
 func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		tokenString, err := c.Cookie("jwt")
+		authHeader := c.GetHeader("Authorization")
+		if authHeader == "" {
+			c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": "token no proporcionado"})
+			c.Abort()
+			return
+		}
 
-		if err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": "No has iniciado sesión"})
+		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
+		if tokenString == authHeader {
+			c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": "Formato de token inválido"})
 			c.Abort()
 			return
 		}

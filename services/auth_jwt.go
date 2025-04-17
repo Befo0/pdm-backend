@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/joho/godotenv"
 )
 
 var secret string
@@ -19,6 +20,12 @@ type JWTClaims struct {
 }
 
 func init() {
+
+	err := godotenv.Load(".env")
+	if err != nil {
+		log.Fatal("La variable de entorno no ha sido cargada")
+	}
+
 	secret = os.Getenv("SECRET_WORD")
 	if secret == "" {
 		log.Fatal("No se ha encontrado la clave secreta")
