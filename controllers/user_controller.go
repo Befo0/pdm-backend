@@ -69,10 +69,10 @@ func (h *UserHandler) Login(c *gin.Context) {
 
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			c.JSON(http.StatusNotFound, gin.H{"success": false, "errors": gin.H{"email": "No hay cuenta asociada a este correo electronico"}})
+			c.JSON(http.StatusOK, gin.H{"success": false, "errors": gin.H{"email": "No hay cuenta asociada a este correo electronico"}})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"sucess": false, "message": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"sucess": false, "message": "Error en el servidor"})
 		return
 	}
 
@@ -90,4 +90,116 @@ func (h *UserHandler) Login(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"success": true, "token": token})
+}
+
+type UpdateProfileRequest struct {
+	Name  string `json:"nombre"`
+	Email string `json:"correo"`
+}
+
+func (h *UserHandler) UpdateProfile(c *gin.Context) {
+	var updateRequest UpdateProfileRequest
+
+	if err := c.ShouldBindJSON(&updateRequest); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "El formato de la petición es incorrecto"})
+		return
+	}
+
+	claimsInterface, exists := c.Get("claims")
+
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": "No se encontraron claims"})
+		return
+	}
+
+	userClaims, ok := claimsInterface.(*services.JWTClaims)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Tipo de claim invalido"})
+		return
+	}
+
+	user, err := h.Repo.GetUserById(userClaims.UserId)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"success": false, "message": "El usuario no existe"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"sucess": false, "message": "Error en el servidor"})
+		return
+	}
+
+	user.Name = updateRequest.Name
+	user.Email = updateRequest.Email
+
+	if err := h.Repo.DB.Save(&user).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Error al modificar datos"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"success": true, "message": "El perfil ha sido actualizado correctamente"})
+}
+
+type UpdatePasswordRequest struct {
+	ActualPassword  string `json:"actual_password"`
+	NewPassword     string `json:"new_password"`
+	ConfirmPassword string `json:"confirm_password"`
+}
+
+func (h *UserHandler) UpdatePassword(c *gin.Context) {
+	var passwordRequest UpdatePasswordRequest
+
+	if err := c.ShouldBindJSON(&passwordRequest); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "El formato de la petición es incorrecto"})
+		return
+	}
+
+	claimsInterface, exists := c.Get("claims")
+
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": "No se encontraron claims"})
+		return
+	}
+
+	userClaims, ok := claimsInterface.(*services.JWTClaims)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Tipo de claim invalido"})
+		return
+	}
+
+	user, err := h.Repo.GetUserById(userClaims.UserId)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"success": false, "message": "El usuario no existe"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"sucess": false, "message": "Error en el servidor"})
+		return
+	}
+
+	password := user.Password
+
+	if err := bcrypt.CompareHashAndPassword([]byte(password), []byte(passwordRequest.ActualPassword)); err != nil {
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": "La contraseña no coincide con la actual"})
+		return
+	}
+
+	if passwordRequest.NewPassword != passwordRequest.ConfirmPassword {
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": "La confirmación de tu contraseña no coincide con la nueva"})
+		return
+	}
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(passwordRequest.NewPassword), bcrypt.DefaultCost)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Hubo un error al hashear la contraseña"})
+		return
+	}
+
+	user.Password = string(hashedPassword)
+
+	if err := h.Repo.DB.Save(&user).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Error al modificar la contraseña"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"success": true, "message": "La contraseña ha sido actualizado correctamente"})
 }
