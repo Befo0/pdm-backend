@@ -9,7 +9,7 @@ type Transacciones struct {
 	EsCompartida         bool                `json:"es_compartida" gorm:"not null"`
 	FinanzasConjuntoID   *uint               `json:"finanza_conjunto_id" gorm:"index"`
 	FinanzasConjunto     *FinanzasConjunto   `gorm:"foreignKey:FinanzasConjuntoID"`
-	Descripcion          string              `json:"descripcion" gorm:"size:500;not null"`
+	Descripcion          *string             `json:"descripcion" gorm:"size:500"`
 	TipoRegistroID       uint                `json:"tipo_registro_id" gorm:"index;not null"`
 	TipoRegistro         TipoRegistro        `gorm:"foreignKey:TipoRegistroID"`
 	TipoIngresosID       *uint               `json:"tipo_ingreso_id" gorm:"index"`
