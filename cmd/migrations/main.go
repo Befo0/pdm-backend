@@ -23,8 +23,9 @@ func main() {
 		&models.FinanzasConjunto{},
 		&models.CategoriaEgreso{},
 		&models.SubCategoriaEgreso{},
-		&models.Presupuesto{},
 		&models.Transacciones{},
+		&models.Ahorro{},
+		&models.Invitacion{},
 	)
 	if err != nil {
 		log.Fatal("Ocurrio un error al realizar las migraciones ", err)
@@ -95,4 +96,5 @@ func SeedData() {
 			}
 		}
 	}
+
 }

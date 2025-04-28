@@ -1,6 +1,10 @@
 package models
 
-import "gorm.io/gorm"
+import (
+	"time"
+
+	"gorm.io/gorm"
+)
 
 type Transacciones struct {
 	gorm.Model
@@ -20,5 +24,6 @@ type Transacciones struct {
 	SubCategoriaEgreso   *SubCategoriaEgreso `gorm:"foreignKey:SubCategoriaEgresoID"`
 	TipoPresupuestoID    *uint               `json:"tipo_gasto_id" gorm:"index"`
 	TipoPresupuesto      *TipoPresupuesto    `gorm:"foreignKey:TipoPresupuestoID"`
+	FechaRegistro        time.Time           `json:"fecha_registro" gorm:"not null"`
 	Monto                float64             `json:"monto" gorm:"not null"`
 }

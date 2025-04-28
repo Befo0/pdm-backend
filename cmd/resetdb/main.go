@@ -21,8 +21,9 @@ func main() {
 		&models.FinanzasConjunto{},
 		&models.CategoriaEgreso{},
 		&models.SubCategoriaEgreso{},
-		&models.Presupuesto{},
 		&models.Transacciones{},
+		&models.Ahorro{},
+		&models.Invitacion{},
 	)
 	if err != nil {
 		log.Fatal("Error al reiniciar la base de datos")

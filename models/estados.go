@@ -17,9 +17,9 @@ type RolFinanzaConjunto struct {
 
 type TipoPresupuesto struct {
 	gorm.Model
-	NombreTipoPresupuesto string          `json:"tipo_presupuesto"`
-	Presupuestos          []Presupuesto   `json:"presupuestos"`
-	Transacciones         []Transacciones `gorm:"foreignKey:TipoPresupuestoID" json:"transacciones"`
+	NombreTipoPresupuesto string               `json:"tipo_presupuesto"`
+	SubCategoriasEgreso   []SubCategoriaEgreso `json:"presupuesto"`
+	Transacciones         []Transacciones      `gorm:"foreignKey:TipoPresupuestoID" json:"transacciones"`
 }
 
 type TipoRegistro struct {

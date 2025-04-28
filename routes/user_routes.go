@@ -7,12 +7,13 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func UserRoutes(r *gin.Engine) {
+func UserRouter(r *gin.Engine) {
 
 	userRepo := repositories.NewUserRepository(repositories.GetDB())
-	userHandler := controllers.NewUserHandler(userRepo)
+	financeRepo := repositories.NewFinanzaRepository(repositories.GetDB())
+	handler := controllers.NewUserHandler(userRepo, financeRepo)
 
 	user := r.Group("/user")
-	user.POST("/login", userHandler.Login)
-	user.POST("/register", userHandler.Register)
+	user.POST("/login", handler.Login)
+	user.POST("/register", handler.Register)
 }

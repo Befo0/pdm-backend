@@ -10,7 +10,6 @@ type Finanzas struct {
 	TipoFinanzas      TipoFinanzas         `gorm:"foreignKey:TipoFinanzasID"`
 	Titulo            *string              `json:"titulo" gorm:"size:255"`
 	Descripcion       *string              `json:"descripcion" gorm:"size:500"`
-	Presupuestos      []Presupuesto        `json:"presupuestos"`
 	Transacciones     []Transacciones      `json:"transacciones"`
 	SubCategorias     []SubCategoriaEgreso `json:"sub_categorias"`
 	Categorias        []CategoriaEgreso    `json:"categorias"`

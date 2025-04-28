@@ -12,15 +12,20 @@ import (
 	"gorm.io/gorm"
 )
 
-type UserHandler struct {
-	Repo *repositories.UserRepository
+type Handler struct {
+	UserRepo    *repositories.UserRepository
+	FinanceRepo *repositories.FinanzaRepository
 }
 
-func NewUserHandler(repo *repositories.UserRepository) *UserHandler {
-	return &UserHandler{Repo: repo}
+func NewUserHandler(userRepo *repositories.UserRepository, financeRepo *repositories.FinanzaRepository) *Handler {
+	return &Handler{
+		UserRepo:    userRepo,
+		FinanceRepo: financeRepo,
+	}
 }
 
-func (h *UserHandler) Register(c *gin.Context) {
+func (h *Handler) Register(c *gin.Context) {
+
 	var user models.User
 
 	if err := c.ShouldBindJSON(&user); err != nil {
@@ -36,9 +41,10 @@ func (h *UserHandler) Register(c *gin.Context) {
 
 	user.Password = string(hashedPassword)
 
-	err = h.Repo.Create(&user)
+	err = h.UserRepo.CreateUserAndFinance(&user)
+
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Error al crear el usuario"})
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Error al crear el usuario y la finanza"})
 		return
 	}
 
@@ -56,7 +62,7 @@ type LoginRequest struct {
 	Password string `json:"contraseña"`
 }
 
-func (h *UserHandler) Login(c *gin.Context) {
+func (h *Handler) Login(c *gin.Context) {
 
 	var userRequest LoginRequest
 
@@ -65,7 +71,7 @@ func (h *UserHandler) Login(c *gin.Context) {
 		return
 	}
 
-	user, err := h.Repo.GetUserByEmail(userRequest.Email)
+	user, err := h.UserRepo.GetUserByEmail(userRequest.Email)
 
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -97,7 +103,7 @@ type UpdateProfileRequest struct {
 	Email string `json:"correo"`
 }
 
-func (h *UserHandler) UpdateProfile(c *gin.Context) {
+func (h *Handler) UpdateProfile(c *gin.Context) {
 	var updateRequest UpdateProfileRequest
 
 	if err := c.ShouldBindJSON(&updateRequest); err != nil {
@@ -118,7 +124,7 @@ func (h *UserHandler) UpdateProfile(c *gin.Context) {
 		return
 	}
 
-	user, err := h.Repo.GetUserById(userClaims.UserId)
+	user, err := h.UserRepo.GetUserById(userClaims.UserId)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"success": false, "message": "El usuario no existe"})
@@ -131,7 +137,7 @@ func (h *UserHandler) UpdateProfile(c *gin.Context) {
 	user.Name = updateRequest.Name
 	user.Email = updateRequest.Email
 
-	if err := h.Repo.DB.Save(&user).Error; err != nil {
+	if err := h.UserRepo.DB.Save(&user).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Error al modificar datos"})
 		return
 	}
@@ -145,7 +151,7 @@ type UpdatePasswordRequest struct {
 	ConfirmPassword string `json:"confirm_password"`
 }
 
-func (h *UserHandler) UpdatePassword(c *gin.Context) {
+func (h *Handler) UpdatePassword(c *gin.Context) {
 	var passwordRequest UpdatePasswordRequest
 
 	if err := c.ShouldBindJSON(&passwordRequest); err != nil {
@@ -166,7 +172,7 @@ func (h *UserHandler) UpdatePassword(c *gin.Context) {
 		return
 	}
 
-	user, err := h.Repo.GetUserById(userClaims.UserId)
+	user, err := h.UserRepo.GetUserById(userClaims.UserId)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"success": false, "message": "El usuario no existe"})
@@ -196,7 +202,7 @@ func (h *UserHandler) UpdatePassword(c *gin.Context) {
 
 	user.Password = string(hashedPassword)
 
-	if err := h.Repo.DB.Save(&user).Error; err != nil {
+	if err := h.UserRepo.DB.Save(&user).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Error al modificar la contraseña"})
 		return
 	}

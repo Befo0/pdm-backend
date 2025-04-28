@@ -25,7 +25,8 @@ func main() {
 		AllowCredentials: true,
 	}))
 
-	routes.UserRoutes(r)
+	routes.UserRouter(r)
+	routes.FinanzaRouter(r)
 
 	r.Run(":8000")
 }
