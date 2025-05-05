@@ -2,6 +2,7 @@ package routes
 
 import (
 	"pdm-backend/controllers"
+	"pdm-backend/middlewares"
 	"pdm-backend/repositories"
 
 	"github.com/gin-gonic/gin"
@@ -16,4 +17,10 @@ func UserRouter(r *gin.Engine) {
 	user := r.Group("/user")
 	user.POST("/login", handler.Login)
 	user.POST("/register", handler.Register)
+
+	user.Use(middlewares.AuthMiddleware())
+	{
+		user.PATCH("/change-profile", handler.UpdateProfile)
+		user.PATCH("/change-password", handler.UpdatePassword)
+	}
 }

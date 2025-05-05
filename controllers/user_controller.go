@@ -48,18 +48,12 @@ func (h *Handler) Register(c *gin.Context) {
 		return
 	}
 
-	token, err := services.GenerateJWT(user.ID, user.Name, user.Email)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "No se pudo cargar el token"})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"token": token})
+	c.JSON(http.StatusOK, gin.H{"success": true, "message": "Usuario registrado con exito"})
 }
 
 type LoginRequest struct {
 	Email    string `json:"correo"`
-	Password string `json:"contraseña"`
+	Password string `json:"contrasena"`
 }
 
 func (h *Handler) Login(c *gin.Context) {
@@ -89,7 +83,13 @@ func (h *Handler) Login(c *gin.Context) {
 		return
 	}
 
-	token, err := services.GenerateJWT(user.ID, user.Name, user.Email)
+	finanzaId, err := h.UserRepo.GetFinanceByUserId(user.ID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Ocurrio un error al conseguir el id de la Finanza"})
+		return
+	}
+
+	token, err := services.GenerateJWT(user.ID, user.Name, user.Email, finanzaId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "No se pudo cargar el token"})
 		return
@@ -111,16 +111,9 @@ func (h *Handler) UpdateProfile(c *gin.Context) {
 		return
 	}
 
-	claimsInterface, exists := c.Get("claims")
-
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": "No se encontraron claims"})
-		return
-	}
-
-	userClaims, ok := claimsInterface.(*services.JWTClaims)
-	if !ok {
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Tipo de claim invalido"})
+	userClaims, httpCode, jsonResponse := services.GetClaims(c)
+	if userClaims == nil {
+		c.JSON(httpCode, jsonResponse)
 		return
 	}
 
@@ -146,9 +139,9 @@ func (h *Handler) UpdateProfile(c *gin.Context) {
 }
 
 type UpdatePasswordRequest struct {
-	ActualPassword  string `json:"actual_password"`
-	NewPassword     string `json:"new_password"`
-	ConfirmPassword string `json:"confirm_password"`
+	ActualPassword  string `json:"contrasena"`
+	NewPassword     string `json:"nueva_contrasena"`
+	ConfirmPassword string `json:"confirmar_contrasena"`
 }
 
 func (h *Handler) UpdatePassword(c *gin.Context) {
@@ -159,16 +152,9 @@ func (h *Handler) UpdatePassword(c *gin.Context) {
 		return
 	}
 
-	claimsInterface, exists := c.Get("claims")
-
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": "No se encontraron claims"})
-		return
-	}
-
-	userClaims, ok := claimsInterface.(*services.JWTClaims)
-	if !ok {
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Tipo de claim invalido"})
+	userClaims, httpCode, jsonResponse := services.GetClaims(c)
+	if userClaims == nil {
+		c.JSON(httpCode, jsonResponse)
 		return
 	}
 

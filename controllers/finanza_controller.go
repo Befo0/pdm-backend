@@ -3,6 +3,7 @@ package controllers
 import (
 	"net/http"
 	"pdm-backend/repositories"
+	"pdm-backend/services"
 	"strconv"
 	"time"
 
@@ -17,30 +18,65 @@ func NewFinanzaHandler(financeRepo *repositories.FinanzaRepository) *FinanzaHand
 	return &FinanzaHandler{FinanceRepo: financeRepo}
 }
 
-func (h *FinanzaHandler) GetDashboard(c *gin.Context) {
-	mesString := c.Query("mes")
-	anioString := c.Query("anio")
+func (h *FinanzaHandler) GetDashboardSummary(c *gin.Context) {
 
-	mes, err := strconv.Atoi(mesString)
-	if err != nil || mes < 1 || mes > 12 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Mes inválido"})
+	userClaims, httpCode, jsonResponse := services.GetClaims(c)
+	if userClaims == nil {
+		c.JSON(httpCode, jsonResponse)
 		return
 	}
 
-	anio, err := strconv.Atoi(anioString)
-	if err != nil || anio < 1900 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Año inválido"})
+	inicioMes, finMes, httpCode, jsonResponse, ok := services.ParseMonthAndYear(c)
+	if !ok {
+		c.JSON(httpCode, jsonResponse)
 		return
 	}
 
-	inicioMes := time.Date(anio, time.Month(mes), 1, 0, 0, 0, 0, time.UTC)
-	finMes := inicioMes.AddDate(0, 1, 0)
+	resumenFinanciero, err := h.FinanceRepo.GetFinanceSummary(userClaims.FinanzaId, inicioMes, finMes)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Hubo un error al traer un resumen de los datos"})
+		return
+	}
 
-	resumen, err := h.FinanceRepo.GetSummary(inicioMes, finMes)
+	resumenEgresos, err := h.FinanceRepo.GetEgresoSummary(userClaims.FinanzaId, inicioMes, finMes)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Hubo un error al traer un resumen de los egresos"})
+		return
+	}
+
+	resumenAhorro, err := h.FinanceRepo.GetSavingsSummary(userClaims.FinanzaId, inicioMes, finMes)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Hubo un error al traer un resumen de los ahorros"})
+		return
+	}
 
 	c.JSON(http.StatusOK, gin.H{
+		"success": true,
 		"finanza_principal": gin.H{
-			"nombre": "Finanza principal",
+			"nombre":             "Finanza principal",
+			"resumen_financiero": resumenFinanciero,
+			"resumen_egresos":    resumenEgresos,
+			"resumen_ahorros":    resumenAhorro,
 		},
 	})
+}
+
+func (h *FinanzaHandler) GetDashboardData(c *gin.Context) {
+
+	userClaims, httpCode, jsonResponse := services.GetClaims(c)
+	if userClaims == nil {
+		c.JSON(httpCode, jsonResponse)
+		return
+	}
+
+	inicioMes, finMes, httpCode, jsonResponse, ok := services.ParseMonthAndYear(c)
+	if !ok {
+		c.JSON(httpCode, jsonResponse)
+		return
+	}
+
+	h.FinanceRepo.GetDataSummary(inicioMes, finMes)
+}
+
+func (h *FinanzaHandler) CreateTransaction(c *gin.Context) {
 }

@@ -43,6 +43,7 @@ func (r *UserRepository) CreateUserAndFinance(user *models.User) error {
 
 		subCategoria := models.SubCategoriaEgreso{
 			FinanzasID:         finanza.ID,
+			NombreSubCategoria: "Ahorro",
 			TipoPresupuestoID:  3,
 			CategoriaEgresoID:  categoria.ID,
 			PresupuestoMensual: 0.00,
@@ -86,6 +87,12 @@ func (r *UserRepository) GetUserById(id uint) (*models.User, error) {
 	return &user, nil
 }
 
-func (r *UserRepository) Delete(userID uint) error {
-	return r.DB.Delete(&models.User{}, userID).Error
+func (r *UserRepository) GetFinanceByUserId(userId uint) (uint, error) {
+	var finanza models.Finanzas
+
+	if err := r.DB.Where("user_id = ? AND tipo_finanzas_id", userId, 1).First(&finanza).Error; err != nil {
+		return 0, err
+	}
+
+	return finanza.ID, nil
 }
