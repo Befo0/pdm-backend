@@ -17,6 +17,6 @@ func FinanzaRouter(r *gin.Engine) {
 	finanza.Use(middlewares.AuthMiddleware())
 	{
 		finanza.GET("/resumen", handler.GetDashboardSummary)
-		finanza.GET("/datos", handler.GetDashboardSummary)
+		finanza.GET("/datos", handler.GetDashboardData)
 	}
 }

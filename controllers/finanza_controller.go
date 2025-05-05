@@ -1,13 +1,10 @@
 package controllers
 
 import (
+	"github.com/gin-gonic/gin"
 	"net/http"
 	"pdm-backend/repositories"
 	"pdm-backend/services"
-	"strconv"
-	"time"
-
-	"github.com/gin-gonic/gin"
 )
 
 type FinanzaHandler struct {
@@ -53,7 +50,6 @@ func (h *FinanzaHandler) GetDashboardSummary(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"finanza_principal": gin.H{
-			"nombre":             "Finanza principal",
 			"resumen_financiero": resumenFinanciero,
 			"resumen_egresos":    resumenEgresos,
 			"resumen_ahorros":    resumenAhorro,
@@ -75,7 +71,13 @@ func (h *FinanzaHandler) GetDashboardData(c *gin.Context) {
 		return
 	}
 
-	h.FinanceRepo.GetDataSummary(inicioMes, finMes)
+	resultado, err := h.FinanceRepo.GetDataSummary(inicioMes, finMes, userClaims.FinanzaId)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Ocurrio un error al conseguir los datos del dashboard"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"success": true, "categorias": resultado})
 }
 
 func (h *FinanzaHandler) CreateTransaction(c *gin.Context) {

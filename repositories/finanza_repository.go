@@ -107,6 +107,42 @@ func (r *FinanzaRepository) GetSavingsSummary(finanzaId uint, inicio, final time
 	return ahorroJSON, nil
 }
 
-func (r *FinanzaRepository) GetDataSummary(inicioMes, finMes time.Time) (gin.H, error) {
-	return nil, nil
+type DashboardData struct {
+	CategoriaId      uint `json:"-"`
+	CategoriaNombre  string
+	TotalPresupuesto float64
+	Gasto            float64
+	Diferencia       float64
+}
+
+func (r *FinanzaRepository) GetDataSummary(inicioMes, finMes time.Time, finanzaId uint) (*[]DashboardData, error) {
+
+	var resultados []DashboardData
+
+	err := r.DB.Model(models.CategoriaEgreso{}).Select("categoria_egresos.id AS categoria_id, categoria_egresos.nombre_categoria AS categoria_nombre, COALESCE(SUM(sub_categoria_egresos.presupuesto_mensual), 0) AS total_presupuesto").
+		Joins("LEFT JOIN sub_categoria_egresos ON sub_categoria_egresos.categoria_egreso_id = categoria_egresos.id").
+		Group("categoria_egresos.nombre_categoria").
+		Order("categoria_egresos.nombre_categoria").
+		Scan(&resultados).Error
+	if err != nil {
+		return nil, err
+	}
+
+	for index := range resultados {
+		var totalGasto float64
+
+		err := r.DB.Model(models.Transacciones{}).Where("finanzas_id = ? AND tipo_registro_id = ? AND fecha_registro >= ? AND fecha_registro < ? AND categoria_egreso_id = ?", finanzaId, 2, inicioMes, finMes, resultados[index].CategoriaId).Select("COALESCE(SUM(monto), 0)").Scan(&totalGasto).Error
+
+		if err != nil {
+			return nil, err
+		}
+
+		diferencia := resultados[index].TotalPresupuesto - totalGasto
+
+		resultados[index].Gasto = totalGasto
+		resultados[index].Diferencia = diferencia
+
+	}
+
+	return &resultados, nil
 }
