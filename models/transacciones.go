@@ -24,6 +24,8 @@ type Transacciones struct {
 	SubCategoriaEgreso   *SubCategoriaEgreso `gorm:"foreignKey:SubCategoriaEgresoID"`
 	TipoPresupuestoID    *uint               `json:"tipo_gasto_id" gorm:"index"`
 	TipoPresupuesto      *TipoPresupuesto    `gorm:"foreignKey:TipoPresupuestoID"`
+	UserID               uint                `json:"id_usuario_registro" gorm:"index"`
+	User                 User                `gorm:"foreignKey:UserID"`
 	FechaRegistro        time.Time           `json:"fecha_registro" gorm:"not null"`
 	Monto                float64             `json:"monto" gorm:"not null"`
 }

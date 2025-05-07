@@ -19,7 +19,9 @@ func NewFinanzaRepository(db *gorm.DB) *FinanzaRepository {
 func SumarMonto(db *gorm.DB, modelo interface{}, finanzaId uint, tipo int, inicio, final time.Time) (float64, error) {
 	var total float64
 
-	err := db.Model(modelo).Where("finanzas_id = ? AND tipo_registro_id = ? AND fecha_registro >= ? AND fecha_registro < ?", finanzaId, tipo, inicio, final).Select("COALESCE(SUM(monto), 0)").Scan(&total).Error
+	err := db.Model(modelo).
+		Where("finanzas_id = ? AND tipo_registro_id = ? AND fecha_registro >= ? AND fecha_registro < ?", finanzaId, tipo, inicio, final).
+		Select("COALESCE(SUM(monto), 0)").Scan(&total).Error
 
 	return total, err
 }
@@ -50,7 +52,11 @@ func (r *FinanzaRepository) GetFinanceSummary(finanzaId uint, inicio, final time
 func (r *FinanzaRepository) GetEgresoSummary(finanzaId uint, inicio, final time.Time) (gin.H, error) {
 	var presupuestoMensual float64
 
-	err := r.DB.Model(models.SubCategoriaEgreso{}).Where("finanzas_id = ?", finanzaId).Select("COALESCE(SUM(presupuesto_mensual), 0)").Scan(&presupuestoMensual).Error
+	err := r.DB.Model(models.SubCategoriaEgreso{}).
+		Where("finanzas_id = ?", finanzaId).
+		Select("COALESCE(SUM(presupuesto_mensual), 0)").
+		Scan(&presupuestoMensual).Error
+
 	if err != nil {
 		return nil, err
 	}
@@ -82,12 +88,17 @@ func (r *FinanzaRepository) GetSavingsSummary(finanzaId uint, inicio, final time
 		return nil, err
 	}
 
-	err = r.DB.Model(models.SubCategoriaEgreso{}).Where("finanzas_id  = ? AND nombre_sub_categoria = ?", finanzaId, "Ahorro").Select("id").Scan(&subCategoriaId).Error
+	err = r.DB.Model(models.SubCategoriaEgreso{}).Where("finanzas_id  = ? AND nombre_sub_categoria = ?", finanzaId, "Ahorro").
+		Select("id").Scan(&subCategoriaId).Error
+
 	if err != nil {
 		return nil, err
 	}
 
-	err = r.DB.Model(models.Transacciones{}).Where("finanzas_id = ? AND tipo_registro_id = ? AND fecha_registro >= ? AND fecha_registro < ? AND sub_categoria_egreso_id = ?", finanzaId, 2, inicio, final, subCategoriaId).Select("COALESCE(SUM(monto), 0)").Scan(&ahorroGuardado).Error
+	err = r.DB.Model(models.Transacciones{}).
+		Where("finanzas_id = ? AND tipo_registro_id = ? AND fecha_registro >= ? AND fecha_registro < ? AND sub_categoria_egreso_id = ?", finanzaId, 2, inicio, final, subCategoriaId).
+		Select("COALESCE(SUM(monto), 0)").Scan(&ahorroGuardado).Error
+
 	if err != nil {
 		return nil, err
 	}

@@ -10,10 +10,11 @@ import (
 
 func TransaccionRouter(r *gin.Engine) {
 	transaccionRepo := repositories.NewTransaccionRepository(repositories.GetDB())
-	handler := controllers.NewTransaccionHanlder(transaccionRepo)
+	handler := controllers.NewTransaccionHandler(transaccionRepo)
 
-	transaccion := r.Group("/transaccion")
+	transaccion := r.Group("/transacciones")
 	transaccion.Use(middlewares.AuthMiddleware())
 	{
+		transaccion.GET("/lista-transaccion", handler.GetTransactions)
 	}
 }

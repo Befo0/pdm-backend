@@ -33,13 +33,13 @@ func (h *Handler) Register(c *gin.Context) {
 		return
 	}
 
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Contrasena), bcrypt.DefaultCost)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Ocurrio un error al hashaer la contraseña"})
 		return
 	}
 
-	user.Password = string(hashedPassword)
+	user.Contrasena = string(hashedPassword)
 
 	err = h.UserRepo.CreateUserAndFinance(&user)
 
@@ -76,7 +76,7 @@ func (h *Handler) Login(c *gin.Context) {
 		return
 	}
 
-	password := user.Password
+	password := user.Contrasena
 
 	if err := bcrypt.CompareHashAndPassword([]byte(password), []byte(userRequest.Password)); err != nil {
 		c.JSON(http.StatusOK, gin.H{"success": false, "message": "La contraseña proporcionada es incorrecta"})
@@ -89,7 +89,7 @@ func (h *Handler) Login(c *gin.Context) {
 		return
 	}
 
-	token, err := services.GenerateJWT(user.ID, user.Name, user.Email, finanzaId)
+	token, err := services.GenerateJWT(user.ID, user.Nombre, user.Correo, finanzaId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "No se pudo cargar el token"})
 		return
@@ -127,8 +127,8 @@ func (h *Handler) UpdateProfile(c *gin.Context) {
 		return
 	}
 
-	user.Name = updateRequest.Name
-	user.Email = updateRequest.Email
+	user.Nombre = updateRequest.Name
+	user.Nombre = updateRequest.Email
 
 	if err := h.UserRepo.DB.Save(&user).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Error al modificar datos"})
@@ -168,7 +168,7 @@ func (h *Handler) UpdatePassword(c *gin.Context) {
 		return
 	}
 
-	password := user.Password
+	password := user.Contrasena
 
 	if err := bcrypt.CompareHashAndPassword([]byte(password), []byte(passwordRequest.ActualPassword)); err != nil {
 		c.JSON(http.StatusOK, gin.H{"success": false, "message": "La contraseña no coincide con la actual"})
@@ -186,7 +186,7 @@ func (h *Handler) UpdatePassword(c *gin.Context) {
 		return
 	}
 
-	user.Password = string(hashedPassword)
+	user.Contrasena = string(hashedPassword)
 
 	if err := h.UserRepo.DB.Save(&user).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Error al modificar la contraseña"})

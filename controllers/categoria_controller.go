@@ -4,7 +4,6 @@ import (
 	"net/http"
 	"pdm-backend/repositories"
 	"pdm-backend/services"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -36,14 +35,11 @@ func (h *CategoriaHandler) GetCategories(c *gin.Context) {
 
 func (h *CategoriaHandler) GetCategoriesData(c *gin.Context) {
 
-	idParam := c.Param("id")
-
-	idUint, err := strconv.ParseUint(idParam, 10, 64)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "El id no es un numero valido"})
+	idCategoria, httpCode, jsonResponse := services.ParseUint(c)
+	if idCategoria == nil {
+		c.JSON(httpCode, jsonResponse)
 		return
 	}
-	idCategoria := uint(idUint)
 
 	userClaims, httpCode, jsonResponse := services.GetClaims(c)
 	if userClaims == nil {
