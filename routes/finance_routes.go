@@ -10,8 +10,8 @@ import (
 
 func FinanzaRouter(r *gin.Engine) {
 
-	financeRepo := repositories.NewFinanzaRepository(repositories.GetDB())
-	handler := controllers.NewFinanzaHandler(financeRepo)
+	finanzaRepo := repositories.NewFinanzaRepository(repositories.GetDB())
+	handler := controllers.NewFinanzaHandler(finanzaRepo)
 
 	finanza := r.Group("/finanza")
 	finanza.Use(middlewares.AuthMiddleware())

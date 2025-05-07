@@ -27,6 +27,8 @@ func main() {
 
 	routes.UserRouter(r)
 	routes.FinanzaRouter(r)
+	routes.CategoriaRouter(r)
+	routes.TransaccionRouter(r)
 
 	r.Run(":8000")
 }
