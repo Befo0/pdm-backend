@@ -10,7 +10,6 @@ type Transacciones struct {
 	gorm.Model
 	FinanzasID           uint                `json:"finanza_id" gorm:"index;not null"`
 	Finanzas             Finanzas            `gorm:"foreignKey:FinanzasID"`
-	EsCompartida         bool                `json:"es_compartida" gorm:"not null"`
 	FinanzasConjuntoID   *uint               `json:"finanza_conjunto_id" gorm:"index"`
 	FinanzasConjunto     *FinanzasConjunto   `gorm:"foreignKey:FinanzasConjuntoID"`
 	Descripcion          *string             `json:"descripcion" gorm:"size:500"`
