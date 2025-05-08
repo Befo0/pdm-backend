@@ -54,7 +54,12 @@ func (h *TransaccionHandler) GetTransactionById(c *gin.Context) {
 
 	transaccion, err := h.TransaccionRepo.GetTransactionById(idTransaccion)
 	if err != nil {
-		c.JSON()
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Hubo un error al conseguir la transaccion"})
 		return
 	}
+
+	c.JSON(http.StatusOK, transaccion)
+}
+
+func (h *TransaccionHandler) CreateTransaction(c *gin.Context) {
 }
