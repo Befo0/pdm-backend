@@ -6,7 +6,7 @@ import (
 	"gorm.io/gorm"
 )
 
-type Invitacion struct {
+type Invitaciones struct {
 	gorm.Model
 	FinanzaConjuntoID uint             `gorm:"index;not null" json:"finanza_conjunto_id"`
 	Codigo            string           `gorm:"size:500;not null" json:"codigo"`

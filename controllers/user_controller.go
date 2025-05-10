@@ -26,22 +26,33 @@ func NewUserHandler(userRepo *repositories.UserRepository, financeRepo *reposito
 
 func (h *Handler) Register(c *gin.Context) {
 
-	var user models.User
+	var newUser models.User
 
-	if err := c.ShouldBindJSON(&user); err != nil {
+	if err := c.ShouldBindJSON(&newUser); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "El formato de la petición esta incorrecto"})
 		return
 	}
 
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Contrasena), bcrypt.DefaultCost)
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newUser.Contrasena), bcrypt.DefaultCost)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Ocurrio un error al hashaer la contraseña"})
 		return
 	}
 
-	user.Contrasena = string(hashedPassword)
+	user, err := h.UserRepo.GetUserByEmail(newUser.Correo)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"sucess": false, "message": "Error en el servidor"})
+		return
+	}
 
-	err = h.UserRepo.CreateUserAndFinance(&user)
+	if user != nil {
+		c.JSON(http.StatusOK, gin.H{"sucess": true, "message": "Ese correo ya esta registrado"})
+		return
+	}
+
+	newUser.Contrasena = string(hashedPassword)
+
+	err = h.UserRepo.CreateUserAndFinance(&newUser)
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Error al crear el usuario y la finanza"})

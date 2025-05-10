@@ -32,7 +32,7 @@ type Resumen struct {
 	Diferencia      float64
 }
 
-func (r *FinanzaRepository) GetFinanceSummary(finanzaId uint, inicio, final time.Time) (*Resumen, error) {
+func (r *FinanzaRepository) GetFinanceSummary(finanzaId uint, inicio, final time.Time) (gin.H, error) {
 
 	var resumen Resumen
 	err := r.DB.Model(&models.Transacciones{}).
@@ -45,7 +45,11 @@ func (r *FinanzaRepository) GetFinanceSummary(finanzaId uint, inicio, final time
 
 	resumen.Diferencia = resumen.IngresosTotales - resumen.EgresosTotales
 
-	return &resumen, nil
+	return gin.H{
+		"ingresos_totales": resumen.IngresosTotales,
+		"egresos_totales":  resumen.EgresosTotales,
+		"diferencia":       resumen.Diferencia,
+	}, nil
 }
 
 func (r *FinanzaRepository) GetEgresoSummary(finanzaId uint, inicio, final time.Time) (gin.H, error) {
