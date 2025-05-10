@@ -48,7 +48,7 @@ func (h *Handler) Register(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"success": true, "message": "Usuario registrado con exito"})
+	c.JSON(http.StatusCreated, gin.H{"success": true, "message": "Usuario registrado con exito"})
 }
 
 type LoginRequest struct {

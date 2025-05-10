@@ -17,6 +17,9 @@ func NewFinanzaHandler(financeRepo *repositories.FinanzaRepository) *FinanzaHand
 
 func (h *FinanzaHandler) GetDashboardSummary(c *gin.Context) {
 
+	var resumenFinanciero, resumenEgresos, resumenAhorro gin.H
+	errCh := make(chan error, 3)
+
 	userClaims, httpCode, jsonResponse := services.GetClaims(c)
 	if userClaims == nil {
 		c.JSON(httpCode, jsonResponse)
@@ -29,22 +32,36 @@ func (h *FinanzaHandler) GetDashboardSummary(c *gin.Context) {
 		return
 	}
 
-	resumenFinanciero, err := h.FinanceRepo.GetFinanceSummary(userClaims.FinanzaId, inicioMes, finMes)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Hubo un error al traer un resumen de los datos"})
-		return
-	}
+	go func() {
+		resumen, err := h.FinanceRepo.GetFinanceSummary(userClaims.FinanzaId, inicioMes, finMes)
+		if err == nil {
+			resumenFinanciero = resumen
+		}
+		errCh <- err
 
-	resumenEgresos, err := h.FinanceRepo.GetEgresoSummary(userClaims.FinanzaId, inicioMes, finMes)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Hubo un error al traer un resumen de los egresos"})
-		return
-	}
+	}()
 
-	resumenAhorro, err := h.FinanceRepo.GetSavingsSummary(userClaims.FinanzaId, inicioMes, finMes)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Hubo un error al traer un resumen de los ahorros"})
-		return
+	go func() {
+		resumen, err := h.FinanceRepo.GetEgresoSummary(userClaims.FinanzaId, inicioMes, finMes)
+		if err == nil {
+			resumenEgresos = resumen
+		}
+		errCh <- err
+	}()
+
+	go func() {
+		resumen, err := h.FinanceRepo.GetSavingsSummary(userClaims.FinanzaId, inicioMes, finMes)
+		if err == nil {
+			resumenAhorro = resumen
+		}
+		errCh <- err
+	}()
+
+	for i := 0; i < 3; i++ {
+		if err := <-errCh; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Hubo un error al conseguir los datos del dashboard"})
+			return
+		}
 	}
 
 	c.JSON(http.StatusOK, gin.H{

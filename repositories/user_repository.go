@@ -70,7 +70,7 @@ func (r *UserRepository) CreateUserAndFinance(user *models.User) error {
 func (r *UserRepository) GetUserByEmail(email string) (*models.User, error) {
 	var user models.User
 
-	if err := r.DB.Where("email = ?", email).First(&user).Error; err != nil {
+	if err := r.DB.Where("correo = ?", email).First(&user).Error; err != nil {
 		return nil, err
 	}
 

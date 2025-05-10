@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"errors"
 	"net/http"
 	"pdm-backend/models"
 	"pdm-backend/repositories"
@@ -8,6 +9,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 type TransaccionHandler struct {
@@ -56,6 +58,10 @@ func (h *TransaccionHandler) GetTransactionById(c *gin.Context) {
 
 	transaccion, err := h.TransaccionRepo.GetTransactionById(idTransaccion)
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"success": false, "message": "No se encontro la transacción"})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Hubo un error al conseguir la transaccion"})
 		return
 	}
@@ -77,14 +83,14 @@ func (h *TransaccionHandler) CreateTransaction(c *gin.Context) {
 	var transaccionRequest TransactionRequest
 	var transaccion models.Transacciones
 
-	userClaims, httpCode, jsonResponse := services.GetClaims(c)
-	if userClaims == nil {
-		c.JSON(httpCode, jsonResponse)
+	if err := c.ShouldBindJSON(&transaccionRequest); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "El formato de la peticion esta incorrecto"})
 		return
 	}
 
-	if err := c.ShouldBindJSON(&transaccionRequest); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "El formato de la peticion esta incorrecto"})
+	userClaims, httpCode, jsonResponse := services.GetClaims(c)
+	if userClaims == nil {
+		c.JSON(httpCode, jsonResponse)
 		return
 	}
 
@@ -120,5 +126,5 @@ func (h *TransaccionHandler) CreateTransaction(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"success": true, "message": "La transaccion fue creada corractamente"})
+	c.JSON(http.StatusCreated, gin.H{"success": true, "message": "La transaccion fue creada corractamente"})
 }

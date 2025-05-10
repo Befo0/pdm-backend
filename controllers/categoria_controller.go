@@ -1,11 +1,14 @@
 package controllers
 
 import (
+	"errors"
 	"net/http"
+	"pdm-backend/models"
 	"pdm-backend/repositories"
 	"pdm-backend/services"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 type CategoriaHandler struct {
@@ -54,4 +57,77 @@ func (h *CategoriaHandler) GetCategoriesData(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, datosFiltro)
+}
+
+type CategoriaRequest struct {
+	NombreCategoria string `json:"nombre_categoria"`
+}
+
+func (h *CategoriaHandler) CreateCategoria(c *gin.Context) {
+
+	var categoriaRequest CategoriaRequest
+	var categoria models.CategoriaEgreso
+
+	if err := c.ShouldBindJSON(&categoriaRequest); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "El formato de la peticion esta incorrecto"})
+		return
+	}
+
+	userClaims, httpCode, jsonResponse := services.GetClaims(c)
+	if userClaims == nil {
+		c.JSON(httpCode, jsonResponse)
+		return
+	}
+
+	categoria.NombreCategoria = categoriaRequest.NombreCategoria
+	categoria.FinanzasID = userClaims.FinanzaId
+	categoria.UserID = userClaims.UserId
+
+	if err := h.CategoriaRepo.CreateCategory(&categoria); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Hubo un error al crear la categoria"})
+		return
+	}
+
+	c.JSON(http.StatusCreated, gin.H{"success": true, "message": "La categoria fue creada con exito"})
+}
+
+func (h *CategoriaHandler) UpdateCategoria(c *gin.Context) {
+
+	var updateRequest CategoriaRequest
+
+	if err := c.ShouldBindJSON(&updateRequest); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "El formato de la peticion esta incorrecto"})
+		return
+	}
+
+	idCategoria, httpCode, jsonResponse := services.ParseUint(c)
+	if idCategoria == nil {
+		c.JSON(httpCode, jsonResponse)
+		return
+	}
+
+	userClaims, httpCode, jsonResponse := services.GetClaims(c)
+	if userClaims == nil {
+		c.JSON(httpCode, jsonResponse)
+		return
+	}
+
+	categoria, err := h.CategoriaRepo.GetCategoryById(idCategoria)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"success": false, "message": "No se encontro la transacción"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Hubo un error al conseguir la transaccion"})
+		return
+	}
+
+	categoria.NombreCategoria = updateRequest.NombreCategoria
+
+	if err := h.CategoriaRepo.DB.Save(&categoria).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Error al modificar la categoria"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"success": true, "message": "La categoira fue modificada correctamente"})
 }

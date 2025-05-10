@@ -25,7 +25,7 @@ type ListaTransacciones struct {
 	NombreUsuario    string
 }
 
-func (r *TransaccionRepository) GetTransactions(inicioMes, finMes time.Time, finanzaId uint) (*[]ListaTransacciones, error) {
+func (r *TransaccionRepository) GetTransactions(inicioMes, finMes time.Time, finanzaId uint) ([]ListaTransacciones, error) {
 
 	transacciones := []ListaTransacciones{}
 
@@ -52,7 +52,7 @@ func (r *TransaccionRepository) GetTransactions(inicioMes, finMes time.Time, fin
 		return nil, err
 	}
 
-	return &transacciones, nil
+	return transacciones, nil
 }
 
 type Transaccion struct {

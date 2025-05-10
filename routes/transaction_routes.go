@@ -16,5 +16,7 @@ func TransaccionRouter(r *gin.Engine) {
 	transaccion.Use(middlewares.AuthMiddleware())
 	{
 		transaccion.GET("/lista-transaccion", handler.GetTransactions)
+		transaccion.GET("/transaccion/:id", handler.GetTransactionById)
+		transaccion.POST("/crear-transaccion", handler.CreateTransaction)
 	}
 }

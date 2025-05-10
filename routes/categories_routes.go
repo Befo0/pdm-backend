@@ -18,5 +18,7 @@ func CategoriaRouter(r *gin.Engine) {
 	{
 		categoria.GET("/lista-categorias", handler.GetCategories)
 		categoria.GET("/datos-categorias/:id", handler.GetCategoriesData)
+		categoria.POST("/crear-categoria", handler.CreateCategoria)
+		categoria.PATCH("/actualizar-categoria/:id", handler.UpdateCategoria)
 	}
 }

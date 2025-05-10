@@ -19,7 +19,7 @@ type CategoriasFinanzas struct {
 	CategoriaNombre string
 }
 
-func (r *CategoriaRepository) GetCategories(finanzaId uint) (*[]CategoriasFinanzas, error) {
+func (r *CategoriaRepository) GetCategories(finanzaId uint) ([]CategoriasFinanzas, error) {
 
 	var categorias []CategoriasFinanzas
 
@@ -31,7 +31,7 @@ func (r *CategoriaRepository) GetCategories(finanzaId uint) (*[]CategoriasFinanz
 		return nil, err
 	}
 
-	return &categorias, err
+	return categorias, err
 }
 
 type SubCategorias struct {
@@ -56,24 +56,37 @@ type JSONResponse struct {
 func (r *CategoriaRepository) GetCategoriesData(finanzaId uint, categoriaId *uint) (*JSONResponse, error) {
 
 	var resumen CategoriaResumen
-	err := r.DB.Model(models.SubCategoriaEgreso{}).
-		Where("sub_categoria_egresos.finanzas_id = ? AND sub_categoria_egresos.categoria_egreso_id = ?", finanzaId, categoriaId).
-		Select("COALESCE(SUM(sub_categoria_egresos.presupuesto_mensual), 0) AS presupuesto, COALESCE(SUM(transacciones.monto), 0) AS gasto").
-		Joins("LEFT JOIN transacciones on transacciones.sub_categoria_egreso_id = sub_categoria_egresos.id").
-		Scan(&resumen).Error
+	var subCategorias []SubCategorias
+	errCh := make(chan error, 2)
 
-	if err != nil {
-		return nil, err
+	baseQuery := func(tx *gorm.DB) *gorm.DB {
+		q := tx.Where("sub_categoria_egresos.finanzas_id = ?", finanzaId)
+		if categoriaId != nil {
+			q = q.Where("sub_categoria_egresos.categoria_egreso_id = ?", *categoriaId)
+		}
+		return q
 	}
 
-	var subCategorias []SubCategorias
-	err = r.DB.Model(models.SubCategoriaEgreso{}).
-		Where("sub_categoria_egresos.finanzas_id = ? AND sub_categoria_egresos.categoria_egreso_id = ?").
-		Select("sub_categoria_egresos.nombre_sub_categoria AS nombre, COALESCE(SUM(sub_categoria_egresos.presupuesto_mensual),0) AS presupuesto , COALESCE(SUM(transacciones.monto),0) AS gasto").
-		Joins("LEFT JOIN transacciones ON transacciones.sub_categoria_egreso_id = sub_categoria_egresos.id").
-		Group("sub_categoria_egresos.id").Scan(&subCategorias).Error
-	if err != nil {
-		return nil, err
+	go func() {
+		err := baseQuery(r.DB.Model(models.SubCategoriaEgreso{})).
+			Select("COALESCE(SUM(sub_categoria_egresos.presupuesto_mensual), 0) AS presupuesto, COALESCE(SUM(transacciones.monto), 0) AS gasto").
+			Joins("LEFT JOIN transacciones on transacciones.sub_categoria_egreso_id = sub_categoria_egresos.id").
+			Scan(&resumen).Error
+		errCh <- err
+	}()
+
+	go func() {
+		err := baseQuery(r.DB.Model(models.SubCategoriaEgreso{})).
+			Select("sub_categoria_egresos.nombre_sub_categoria AS nombre, COALESCE(SUM(sub_categoria_egresos.presupuesto_mensual),0) AS presupuesto , COALESCE(SUM(transacciones.monto),0) AS gasto").
+			Joins("LEFT JOIN transacciones ON transacciones.sub_categoria_egreso_id = sub_categoria_egresos.id").
+			Group("sub_categoria_egresos.id").Scan(&subCategorias).Error
+		errCh <- err
+	}()
+
+	for i := 0; i < 2; i++ {
+		if err := <-errCh; err != nil {
+			return nil, err
+		}
 	}
 
 	for index := range subCategorias {
@@ -93,4 +106,19 @@ func (r *CategoriaRepository) GetCategoriesData(finanzaId uint, categoriaId *uin
 	}
 
 	return &respuesta, nil
+}
+
+func (r *CategoriaRepository) CreateCategory(categoria *models.CategoriaEgreso) error {
+	return r.DB.Create(&categoria).Error
+}
+
+func (r *CategoriaRepository) GetCategoryById(id *uint) (*models.CategoriaEgreso, error) {
+
+	var categoria models.CategoriaEgreso
+
+	if err := r.DB.Where("id = ?", id).First(&categoria).Error; err != nil {
+		return nil, err
+	}
+
+	return &categoria, nil
 }

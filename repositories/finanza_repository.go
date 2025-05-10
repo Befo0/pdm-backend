@@ -26,96 +26,112 @@ func SumarMonto(db *gorm.DB, modelo interface{}, finanzaId uint, tipo int, inici
 	return total, err
 }
 
-func (r *FinanzaRepository) GetFinanceSummary(finanzaId uint, inicio, final time.Time) (gin.H, error) {
+type Resumen struct {
+	IngresosTotales float64
+	EgresosTotales  float64
+	Diferencia      float64
+}
 
-	ingresosTotales, err := SumarMonto(r.DB, models.Transacciones{}, finanzaId, 1, inicio, final)
+func (r *FinanzaRepository) GetFinanceSummary(finanzaId uint, inicio, final time.Time) (*Resumen, error) {
+
+	var resumen Resumen
+	err := r.DB.Model(&models.Transacciones{}).
+		Select("SUM(CASE WHEN tipo_registro_id = 1 THEN monto ELSE 0 END) AS ingresos, SUM(CASE WHEN tipo_registro_id = 2 THEN monto ELSE 0 END) AS egresos").
+		Where("finanzas_id = ? AND fecha_registro >= ? AND fecha_registro < ? AND deleted_at IS NULL", 1, inicio, final).
+		Scan(&resumen).Error
 	if err != nil {
 		return nil, err
 	}
 
-	egresosTotales, err := SumarMonto(r.DB, models.Transacciones{}, finanzaId, 2, inicio, final)
-	if err != nil {
-		return nil, err
-	}
+	resumen.Diferencia = resumen.IngresosTotales - resumen.EgresosTotales
 
-	diferencia := ingresosTotales - egresosTotales
-
-	resumenJSON := gin.H{
-		"ingresos_totales": ingresosTotales,
-		"egresos_totales":  egresosTotales,
-		"diferencia":       diferencia,
-	}
-
-	return resumenJSON, nil
+	return &resumen, nil
 }
 
 func (r *FinanzaRepository) GetEgresoSummary(finanzaId uint, inicio, final time.Time) (gin.H, error) {
-	var presupuestoMensual float64
 
-	err := r.DB.Model(models.SubCategoriaEgreso{}).
-		Where("finanzas_id = ?", finanzaId).
-		Select("COALESCE(SUM(presupuesto_mensual), 0)").
-		Scan(&presupuestoMensual).Error
+	var egresosTotales, presupuestoMensual float64
+	errCh := make(chan error, 2)
 
-	if err != nil {
-		return nil, err
-	}
+	go func() {
+		err := r.DB.Model(models.SubCategoriaEgreso{}).
+			Where("finanzas_id = ?", finanzaId).
+			Select("COALESCE(SUM(presupuesto_mensual), 0)").
+			Scan(&presupuestoMensual).Error
 
-	egresosTotales, err := SumarMonto(r.DB, models.Transacciones{}, finanzaId, 2, inicio, final)
-	if err != nil {
-		return nil, err
+		errCh <- err
+	}()
+
+	go func() {
+		monto, err := SumarMonto(r.DB, models.Transacciones{}, finanzaId, 2, inicio, final)
+
+		if err == nil {
+			egresosTotales = monto
+		}
+
+		errCh <- err
+	}()
+
+	for i := 0; i < 2; i++ {
+		if err := <-errCh; err != nil {
+			return nil, err
+		}
 	}
 
 	variacion := presupuestoMensual - egresosTotales
 
-	registroJSON := gin.H{
+	return gin.H{
 		"presupuesto_mensual": presupuestoMensual,
 		"consumo_mensual":     egresosTotales,
 		"variacion_mensual":   variacion,
-	}
-
-	return registroJSON, nil
+	}, nil
 }
 
 func (r *FinanzaRepository) GetSavingsSummary(finanzaId uint, inicio, final time.Time) (gin.H, error) {
 	var metaAhorro float64
 	var ahorroGuardado float64
 	var subCategoriaId uint
-	var porcentajeAhorro float64
+	errCh := make(chan error, 3)
 
-	err := r.DB.Model(models.Ahorro{}).Where("finanzas_id = ?", finanzaId).Select("monto").Scan(&metaAhorro).Error
-	if err != nil {
+	go func() {
+		err := r.DB.Model(models.Ahorro{}).Where("finanzas_id = ?", finanzaId).Select("monto").Scan(&metaAhorro).Error
+		errCh <- err
+	}()
+
+	go func() {
+		err := r.DB.Model(models.SubCategoriaEgreso{}).Where("finanzas_id  = ? AND nombre_sub_categoria = ?", finanzaId, "Ahorro").
+			Select("id").Scan(&subCategoriaId).Error
+		errCh <- err
+	}()
+
+	for i := 0; i < 2; i++ {
+		if err := <-errCh; err != nil {
+			return nil, err
+		}
+	}
+
+	go func() {
+		err := r.DB.Model(models.Transacciones{}).
+			Where("finanzas_id = ? AND tipo_registro_id = ? AND fecha_registro >= ? AND fecha_registro < ? AND sub_categoria_egreso_id = ?", finanzaId, 2, inicio, final, subCategoriaId).
+			Select("COALESCE(SUM(monto), 0)").Scan(&ahorroGuardado).Error
+		errCh <- err
+	}()
+
+	if err := <-errCh; err != nil {
 		return nil, err
 	}
 
-	err = r.DB.Model(models.SubCategoriaEgreso{}).Where("finanzas_id  = ? AND nombre_sub_categoria = ?", finanzaId, "Ahorro").
-		Select("id").Scan(&subCategoriaId).Error
-
-	if err != nil {
-		return nil, err
-	}
-
-	err = r.DB.Model(models.Transacciones{}).
-		Where("finanzas_id = ? AND tipo_registro_id = ? AND fecha_registro >= ? AND fecha_registro < ? AND sub_categoria_egreso_id = ?", finanzaId, 2, inicio, final, subCategoriaId).
-		Select("COALESCE(SUM(monto), 0)").Scan(&ahorroGuardado).Error
-
-	if err != nil {
-		return nil, err
-	}
+	porcentajeAhorro := 0.0
 
 	if metaAhorro != 0 {
 		porcentajeAhorro = (ahorroGuardado * 100) / metaAhorro
-	} else {
-		porcentajeAhorro = 0
 	}
 
-	ahorroJSON := gin.H{
+	return gin.H{
 		"meta":                metaAhorro,
 		"acumulado":           ahorroGuardado,
 		"progreso_porcentaje": porcentajeAhorro,
-	}
-
-	return ahorroJSON, nil
+	}, nil
 }
 
 type DashboardData struct {
