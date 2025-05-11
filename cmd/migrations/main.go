@@ -25,7 +25,7 @@ func main() {
 		&models.SubCategoriaEgreso{},
 		&models.Transacciones{},
 		&models.Ahorro{},
-		&models.Invitacion{},
+		&models.Invitaciones{},
 	)
 	if err != nil {
 		log.Fatal("Ocurrio un error al realizar las migraciones ", err)

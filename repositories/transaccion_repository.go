@@ -71,7 +71,7 @@ func (r *TransaccionRepository) GetTransactionById(transaccionId *uint) (*Transa
 
 	var transaccion Transaccion
 
-	err := r.DB.Model(models.Transacciones{}).Where("transacciones.id = ?", transaccionId).
+	tx := r.DB.Model(models.Transacciones{}).Where("transacciones.id = ?", transaccionId).
 		Select(`
 		transacciones.tipo_registro_id AS tipo_movimiento_id,
 		tipo_registros.nombre_tipo_registro AS tipo_movimiento, 
@@ -97,10 +97,14 @@ func (r *TransaccionRepository) GetTransactionById(transaccionId *uint) (*Transa
 		Joins("LEFT JOIN sub_categoria_egresos ON sub_categoria_egresos.id = transacciones.sub_categoria_egreso_id").
 		Joins("LEFT JOIN categoria_egresos ON categoria_egresos.id = transacciones.categoria_egreso_id").
 		Joins("LEFT JOIN tipo_presupuestos ON tipo_presupuestos.id = transacciones.tipo_presupuesto_id").
-		Joins("LEFT JOIN users ON users.id = transacciones.user_id").Scan(&transaccion).Error
+		Joins("LEFT JOIN users ON users.id = transacciones.user_id").Scan(&transaccion)
 
-	if err != nil {
-		return nil, err
+	if tx.RowsAffected == 0 {
+		return nil, gorm.ErrRecordNotFound
+	}
+
+	if tx.Error != nil {
+		return nil, tx.Error
 	}
 
 	return &transaccion, nil

@@ -17,6 +17,6 @@ func TransaccionRouter(r *gin.Engine) {
 	{
 		transaccion.GET("/lista-transaccion", handler.GetTransactions)
 		transaccion.GET("/transaccion/:id", handler.GetTransactionById)
-		transaccion.POST("/crear-transaccion", handler.CreateTransaction)
+		transaccion.POST("/crear", handler.CreateTransaction)
 	}
 }

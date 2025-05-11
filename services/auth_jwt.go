@@ -40,9 +40,6 @@ func GenerateJWT(userId uint, userName string, userEmail string, finanzaId uint)
 		UserName:  userName,
 		UserEmail: userEmail,
 		FinanzaId: finanzaId,
-		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(7 * 24 * time.Hour)),
-		},
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)

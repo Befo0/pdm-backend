@@ -36,6 +36,7 @@ func (r *UserRepository) CreateUserAndFinance(user *models.User) error {
 		categoria := models.CategoriaEgreso{
 			FinanzasID:      finanza.ID,
 			NombreCategoria: "Ahorro",
+			UserID:          user.ID,
 		}
 		if err := tx.Create(&categoria).Error; err != nil {
 			return err
@@ -48,6 +49,7 @@ func (r *UserRepository) CreateUserAndFinance(user *models.User) error {
 			CategoriaEgresoID:  categoria.ID,
 			PresupuestoMensual: 0.00,
 			EsCompartida:       false,
+			UserID:             user.ID,
 		}
 		if err := tx.Create(&subCategoria).Error; err != nil {
 			return err
@@ -90,7 +92,7 @@ func (r *UserRepository) GetUserById(id uint) (*models.User, error) {
 func (r *UserRepository) GetFinanceByUserId(userId uint) (uint, error) {
 	var finanza models.Finanzas
 
-	if err := r.DB.Where("user_id = ? AND tipo_finanzas_id", userId, 1).First(&finanza).Error; err != nil {
+	if err := r.DB.Where("user_id = ? AND tipo_finanzas_id = ?", userId, 1).First(&finanza).Error; err != nil {
 		return 0, err
 	}
 

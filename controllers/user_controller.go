@@ -39,13 +39,9 @@ func (h *Handler) Register(c *gin.Context) {
 		return
 	}
 
-	user, err := h.UserRepo.GetUserByEmail(newUser.Correo)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"sucess": false, "message": "Error en el servidor"})
-		return
-	}
+	_, err = h.UserRepo.GetUserByEmail(newUser.Correo)
 
-	if user != nil {
+	if err == nil {
 		c.JSON(http.StatusOK, gin.H{"sucess": true, "message": "Ese correo ya esta registrado"})
 		return
 	}
