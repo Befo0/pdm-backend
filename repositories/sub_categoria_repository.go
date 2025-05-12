@@ -92,3 +92,28 @@ func (r *SubCategoriaRepository) GetSubCategoryById(id *uint) (*models.SubCatego
 
 	return &subCategoria, nil
 }
+
+type SubCategoriaResponse struct {
+	CategoriaId        uint    `json:"categoria_id"`
+	NombreSubCategoria string  `json:"nombre_sub_categoria"`
+	TipoGastoId        uint    `json:"tipo_gasto_id"`
+	Presupuesto        float64 `json:"presupuesto"`
+}
+
+func (r *SubCategoriaRepository) GetSubCategory(id *uint) (*SubCategoriaResponse, error) {
+
+	var subCategoria SubCategoriaResponse
+
+	tx := r.DB.Model(models.SubCategoriaEgreso{}).Where("sub_categoria_egresos.id = ?", id).
+		Select("sub_categoria_egresos.categoria_egreso_id AS categoria_id, sub_categoria_egresos.nombre_sub_categoria AS nombre_sub_categoria, sub_categoria_egresos.tipo_presupuesto_id AS tipo_gasto_id, sub_categoria_egresos.presupuesto_mensual AS presupuesto").Scan(&subCategoria)
+
+	if tx.RowsAffected == 0 {
+		return nil, gorm.ErrRecordNotFound
+	}
+
+	if err := tx.Error; err != nil {
+		return nil, err
+	}
+
+	return &subCategoria, nil
+}

@@ -36,6 +36,33 @@ func (h *SubCategoriaHandler) GetSubCategories(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"sub_categorias": subCategorias})
 }
 
+func (h *SubCategoriaHandler) GetSubCategoryById(c *gin.Context) {
+
+	idSubCategoria, httpCode, jsonResponse := services.ParseUint(c)
+	if idSubCategoria == nil {
+		c.JSON(httpCode, jsonResponse)
+		return
+	}
+
+	userClaims, httpCode, jsonResponse := services.GetClaims(c)
+	if userClaims == nil {
+		c.JSON(httpCode, jsonResponse)
+		return
+	}
+
+	subCategoria, err := h.SubCategoriaRepo.GetSubCategory(idSubCategoria)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"success": false, "message": "No se encontro la sub categoria"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Hubo un error al conseguir la sub categoria"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"success": true, "sub_categoria": subCategoria})
+}
+
 func (h *SubCategoriaHandler) GetSubCategoriesExpensesType(c *gin.Context) {
 
 	userClaims, httpCode, jsonResponse := services.GetClaims(c)
