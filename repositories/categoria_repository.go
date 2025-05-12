@@ -116,9 +116,31 @@ func (r *CategoriaRepository) GetCategoryById(id *uint) (*models.CategoriaEgreso
 
 	var categoria models.CategoriaEgreso
 
-	if err := r.DB.Where("id = ?", id).First(&categoria).Error; err != nil {
+	if err := r.DB.First(&categoria, id).Error; err != nil {
 		return nil, err
 	}
 
 	return &categoria, nil
+}
+
+type ListaCategorias struct {
+	CategoriaId     uint
+	CategoriaNombre string
+	NombreUsuario   string
+}
+
+func (r *CategoriaRepository) GetCategoriesList(finanzaId uint) ([]ListaCategorias, error) {
+
+	var listaCategorias []ListaCategorias
+
+	err := r.DB.Model(models.CategoriaEgreso{}).Where("finanzas_id = ?", finanzaId).
+		Select("categoria_egresos.id AS categoria_id, categoria_egresos.nombre_categoria AS categoria_nombre, users.nombre AS nombre_usuario").
+		Joins("LEFT JOIN users ON users.id = categoria_egresos.user_id").
+		Scan(&listaCategorias).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	return listaCategorias, err
 }

@@ -115,10 +115,10 @@ func (h *CategoriaHandler) UpdateCategoria(c *gin.Context) {
 	categoria, err := h.CategoriaRepo.GetCategoryById(idCategoria)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			c.JSON(http.StatusNotFound, gin.H{"success": false, "message": "No se encontro la transacción"})
+			c.JSON(http.StatusNotFound, gin.H{"success": false, "message": "No se encontro la categoria"})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Hubo un error al conseguir la transaccion"})
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Hubo un error al conseguir la categoria"})
 		return
 	}
 
@@ -129,5 +129,22 @@ func (h *CategoriaHandler) UpdateCategoria(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"success": true, "message": "La categoira fue modificada correctamente"})
+	c.JSON(http.StatusOK, gin.H{"success": true, "message": "La categoria fue modificada correctamente"})
+}
+
+func (h *CategoriaHandler) GetCategoriesList(c *gin.Context) {
+
+	userClaims, httpCode, jsonResponse := services.GetClaims(c)
+	if userClaims == nil {
+		c.JSON(httpCode, jsonResponse)
+		return
+	}
+
+	listaCategorias, err := h.CategoriaRepo.GetCategoriesList(userClaims.FinanzaId)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Ocurrio un error al conseguir las categorias de la finanza"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"lista_categorias": listaCategorias})
 }

@@ -29,6 +29,7 @@ func main() {
 	routes.FinanzaRouter(r)
 	routes.CategoriaRouter(r)
 	routes.TransaccionRouter(r)
+	routes.SubCategoriaRouter(r)
 
 	r.Run(":8000")
 }

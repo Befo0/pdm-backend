@@ -16,7 +16,8 @@ func CategoriaRouter(r *gin.Engine) {
 	categoria := r.Group("/categoria")
 	categoria.Use(middlewares.AuthMiddleware())
 	{
-		categoria.GET("/lista", handler.GetCategories)
+		categoria.GET("/opciones", handler.GetCategories)
+		categoria.GET("/lista", handler.GetCategoriesList)
 		categoria.GET("/datos/:id", handler.GetCategoriesData)
 		categoria.POST("/crear", handler.CreateCategoria)
 		categoria.PATCH("/actualizar/:id", handler.UpdateCategoria)

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/joho/godotenv"

@@ -48,7 +48,6 @@ func (r *UserRepository) CreateUserAndFinance(user *models.User) error {
 			TipoPresupuestoID:  3,
 			CategoriaEgresoID:  categoria.ID,
 			PresupuestoMensual: 0.00,
-			EsCompartida:       false,
 			UserID:             user.ID,
 		}
 		if err := tx.Create(&subCategoria).Error; err != nil {
@@ -82,7 +81,7 @@ func (r *UserRepository) GetUserByEmail(email string) (*models.User, error) {
 func (r *UserRepository) GetUserById(id uint) (*models.User, error) {
 	var user models.User
 
-	if err := r.DB.Where("id = ?", id).First(&user).Error; err != nil {
+	if err := r.DB.First(&user, id).Error; err != nil {
 		return nil, err
 	}
 
