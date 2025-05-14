@@ -18,6 +18,7 @@ func SubCategoriaRouter(r *gin.Engine) {
 	{
 		subCategoria.GET("/opciones", handler.GetSubCategories)
 		subCategoria.GET("/lista", handler.GetSubCategoriesList)
+		subCategoria.GET("/categoria/:id", handler.GetSubCategoryById)
 		subCategoria.GET("/opciones-gasto", handler.GetSubCategoriesExpensesType)
 		subCategoria.POST("/crear", handler.CreateSubCategoria)
 		subCategoria.PUT("/actualizar/:id", handler.UpdateSubCategoria)

@@ -103,8 +103,8 @@ func (r *TransaccionRepository) GetTransactionById(transaccionId *uint) (*Transa
 		return nil, gorm.ErrRecordNotFound
 	}
 
-	if tx.Error != nil {
-		return nil, tx.Error
+	if err := tx.Error; err != nil {
+		return nil, err
 	}
 
 	return &transaccion, nil

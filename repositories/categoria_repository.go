@@ -144,3 +144,7 @@ func (r *CategoriaRepository) GetCategoriesList(finanzaId uint) ([]ListaCategori
 
 	return listaCategorias, err
 }
+
+func (r *CategoriaRepository) UpdateCategory(categoria *models.CategoriaEgreso) error {
+	return r.DB.Save(&categoria).Error
+}

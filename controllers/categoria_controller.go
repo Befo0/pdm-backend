@@ -124,7 +124,7 @@ func (h *CategoriaHandler) UpdateCategoria(c *gin.Context) {
 
 	categoria.NombreCategoria = updateRequest.NombreCategoria
 
-	if err := h.CategoriaRepo.DB.Save(&categoria).Error; err != nil {
+	if err := h.CategoriaRepo.UpdateCategory(categoria); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Error al modificar la categoria"})
 		return
 	}
