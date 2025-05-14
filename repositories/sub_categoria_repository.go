@@ -117,3 +117,7 @@ func (r *SubCategoriaRepository) GetSubCategory(id *uint) (*SubCategoriaResponse
 
 	return &subCategoria, nil
 }
+
+func (r *SubCategoriaRepository) UpdateSubCategory(subCategoria *models.SubCategoriaEgreso) error {
+	return r.DB.Save(&subCategoria).Error
+}

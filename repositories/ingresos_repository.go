@@ -60,3 +60,42 @@ func (r *IngresosRepository) GetIncomesList(finanzaId uint) ([]IngresosLista, er
 func (r *IngresosRepository) CreateIncome(ingreso *models.TipoIngresos) error {
 	return r.DB.Create(&ingreso).Error
 }
+
+func (r *IngresosRepository) GetIncomeById(id *uint) (*models.TipoIngresos, error) {
+	var ingreso models.TipoIngresos
+
+	if err := r.DB.First(&ingreso, id).Error; err != nil {
+		return nil, err
+	}
+
+	return &ingreso, nil
+}
+
+type IncomeResponse struct {
+	IdIngreso          uint    `json:"id_ingreso"`
+	NombreIngreso      string  `json:"nombre_ingreso"`
+	MontoIngreso       float64 `json:"monto_ingreso"`
+	DescripcionIngreso string  `json:"descripcion_ingreso"`
+}
+
+func (r *IngresosRepository) GetIncome(id *uint) (*IncomeResponse, error) {
+	var response IncomeResponse
+
+	tx := r.DB.Model(models.TipoIngresos{}).Where("tipo_ingresos.id = ?", id).
+		Select("tipo_ingresos.id AS id_ingreso, tipo_ingresos.nombre_ingresos AS nombre_ingreso, tipo_ingresos.monto_ingreso AS monto_ingreso, tipo_ingresos.descripcion AS descripcion_ingreso").
+		Scan(&response)
+
+	if tx.RowsAffected == 0 {
+		return nil, gorm.ErrRecordNotFound
+	}
+
+	if err := tx.Error; err != nil {
+		return nil, err
+	}
+
+	return &response, nil
+}
+
+func (r *IngresosRepository) UpdateIncome(ingreso *models.TipoIngresos) error {
+	return r.DB.Save(&ingreso).Error
+}

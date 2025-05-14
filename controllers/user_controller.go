@@ -137,7 +137,7 @@ func (h *Handler) UpdateProfile(c *gin.Context) {
 	user.Nombre = updateRequest.Name
 	user.Nombre = updateRequest.Email
 
-	if err := h.UserRepo.DB.Save(&user).Error; err != nil {
+	if err := h.UserRepo.UpdateUser(user); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Error al modificar datos"})
 		return
 	}
@@ -195,7 +195,7 @@ func (h *Handler) UpdatePassword(c *gin.Context) {
 
 	user.Contrasena = string(hashedPassword)
 
-	if err := h.UserRepo.DB.Save(&user).Error; err != nil {
+	if err := h.UserRepo.UpdateUser(user); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Error al modificar la contraseña"})
 		return
 	}

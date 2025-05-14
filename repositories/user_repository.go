@@ -97,3 +97,7 @@ func (r *UserRepository) GetFinanceByUserId(userId uint) (uint, error) {
 
 	return finanza.ID, nil
 }
+
+func (r *UserRepository) UpdateUser(user *models.User) error {
+	return r.DB.Save(&user).Error
+}

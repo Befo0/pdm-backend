@@ -170,7 +170,7 @@ func (h *SubCategoriaHandler) UpdateSubCategoria(c *gin.Context) {
 	subCategoria.PresupuestoMensual = updateRequest.Presupuesto
 	subCategoria.TipoPresupuestoID = updateRequest.TipoGastoId
 
-	if err := h.SubCategoriaRepo.DB.Save(&subCategoria).Error; err != nil {
+	if err := h.SubCategoriaRepo.UpdateSubCategory(subCategoria); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Error al modificar la sub categoria"})
 		return
 	}
