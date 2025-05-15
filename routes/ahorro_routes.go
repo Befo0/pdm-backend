@@ -17,6 +17,6 @@ func AhorroRouter(r *gin.Engine) {
 	ahorro.Use(middlewares.AuthMiddleware())
 	{
 		ahorro.GET("/lista", handler.GetSavingsData)
-		ahorro.PUT("/actualizar", handler.UpdateSaving)
+		ahorro.POST("/crear-meta", handler.CreateSavingGoal)
 	}
 }

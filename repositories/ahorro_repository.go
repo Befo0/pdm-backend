@@ -1,6 +1,7 @@
 package repositories
 
 import (
+	"errors"
 	"pdm-backend/models"
 
 	"gorm.io/gorm"
@@ -14,57 +15,27 @@ func NewAhorroRepository(db *gorm.DB) *AhorroRepository {
 	return &AhorroRepository{DB: db}
 }
 
-func (r *AhorroRepository) GetSaving(finanzaId uint) (*models.Ahorro, error) {
+func (r *AhorroRepository) CreateOrUpdateSavingGoal(finanzaId uint, monto float64, mes, anio int) error {
 
-	var ahorro models.Ahorro
+	var ahorro models.MetaMensual
+	err := r.DB.Model(models.AhorroMensual{}).Where("finanzasId = ? AND anio = ? AND mes = ?", finanzaId, anio, mes).
+		First(&ahorro).Error
 
-	err := r.DB.Where("finanzas_id = ?", finanzaId).First(&ahorro).Error
 	if err != nil {
-		return nil, err
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			nuevaMeta := models.MetaMensual{
+				FinanzasID: finanzaId,
+				MontoMeta:  monto,
+				Mes:        mes,
+				Anio:       anio,
+			}
+
+			return r.DB.Create(&nuevaMeta).Error
+		}
+		return err
 	}
 
-	return &ahorro, nil
-}
+	ahorro.MontoMeta += monto
 
-func (r *AhorroRepository) UpdateSaving(ahorro *models.Ahorro) error {
 	return r.DB.Save(&ahorro).Error
-}
-
-type AhorroData struct {
-	NombreMes    string
-	AhorroMes    float64
-	AhorroAcum   float64
-	MetaMensual  float64
-	Cumplimiento float64
-}
-
-func (r *AhorroRepository) GetSavingsData(mensualidad float64, finanzaId uint) (*AhorroData, error) {
-
-	var subCategoriaId uint
-	errors := make(chan error, 3)
-	var ahorroData []AhorroData
-	meses := []string{"Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"}
-
-	tx := r.DB.Model(models.SubCategoriaEgreso{}).Where("nombre_sub_categoria = ?", "Ahorro").Select("sub_categoria_egresos.id").Scan(&subCategoriaId)
-	if tx.RowsAffected == 0 {
-		return nil, gorm.ErrRecordNotFound
-	}
-
-	if err := tx.Error; err != nil {
-		return nil, err
-	}
-
-	for index, meses := range meses {
-
-		var ahorroMes float64
-		var ahorroAcum float64
-		metaMensual := float64((index + 1) * 25)
-		cumplimiento := 0.0
-
-		go func() {
-			err := r.DB.Model(models.Transacciones{}).Where("finanzas_id = ? AND sub_categoria_egreso_id = ? AND EXTRACT(MONTH FROM fecha_registro) = ?", finanzaId, subCasubCategoriaId, index+1).Error
-
-			errors <- err
-		}()
-	}
 }

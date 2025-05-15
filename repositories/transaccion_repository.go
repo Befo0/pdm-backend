@@ -1,6 +1,7 @@
 package repositories
 
 import (
+	"errors"
 	"pdm-backend/models"
 	"time"
 
@@ -112,4 +113,30 @@ func (r *TransaccionRepository) GetTransactionById(transaccionId *uint) (*Transa
 
 func (r *TransaccionRepository) CreateTransaction(transaccion *models.Transacciones) error {
 	return r.DB.Create(&transaccion).Error
+}
+
+func (r *TransaccionRepository) CreateOrUpdateSaving(finanzasId uint, monto float64, fecha time.Time) error {
+
+	anio := fecha.Year()
+	mes := int(fecha.Month())
+
+	var ahorro models.AhorroMensual
+	err := r.DB.Model(models.AhorroMensual{}).Where("finanzasId = ? AND anio = ? AND mes = ?", finanzasId, anio, mes).First(&ahorro).Error
+
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			nuevoAhorro := models.AhorroMensual{
+				FinanzasID: finanzasId,
+				Monto:      monto,
+				Mes:        mes,
+				Anio:       anio,
+			}
+			return db.Create(&nuevoAhorro).Error
+		}
+		return err
+	}
+
+	ahorro.Monto += monto
+
+	return r.DB.Save(&ahorro).Error
 }

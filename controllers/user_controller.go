@@ -90,13 +90,13 @@ func (h *Handler) Login(c *gin.Context) {
 		return
 	}
 
-	finanzaId, err := h.UserRepo.GetFinanceByUserId(user.ID)
+	identifiers, err := h.UserRepo.GetFinanceAndSavingSubCategoryByUserId(user.ID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Ocurrio un error al conseguir el id de la Finanza"})
 		return
 	}
 
-	token, err := services.GenerateJWT(user.ID, user.Nombre, user.Correo, finanzaId)
+	token, err := services.GenerateJWT(user.ID, user.Nombre, user.Correo, identifiers.FinanzaId, identifiers.AhorroId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "No se pudo cargar el token"})
 		return

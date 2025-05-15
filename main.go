@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"os"
 	"pdm-backend/routes"
 
 	"github.com/gin-contrib/cors"
@@ -30,6 +31,8 @@ func main() {
 	routes.CategoriaRouter(r)
 	routes.TransaccionRouter(r)
 	routes.SubCategoriaRouter(r)
+	routes.AhorroRouter(r)
 
-	r.Run(":8000")
+	PORT := os.Getenv("PORT")
+	r.Run(PORT)
 }

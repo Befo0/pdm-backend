@@ -70,18 +70,22 @@ func (h *TransaccionHandler) GetTransactionById(c *gin.Context) {
 }
 
 type TransactionRequest struct {
-	TipoTransaccion uint    `json:"tipo_transaccion" binding:"required"`
-	TipoMovimiento  uint    `json:"tipo_movimiento" binding:"required"`
-	TipoCategoria   *uint   `json:"tipo_categoria,omitempty"`
-	TipoGasto       *uint   `json:"tipo_gasto,omitempty"`
-	Monto           float64 `json:"monto" binding:"required"`
-	Descripcion     string  `json:"descripcion"`
+	TipoTransaccion uint       `json:"tipo_transaccion" binding:"required"`
+	TipoMovimiento  uint       `json:"tipo_movimiento" binding:"required"`
+	TipoCategoria   *uint      `json:"tipo_categoria,omitempty"`
+	TipoGasto       *uint      `json:"tipo_gasto,omitempty"`
+	Monto           float64    `json:"monto" binding:"required"`
+	Descripcion     string     `json:"descripcion"`
+	FechaRegistro   *time.Time `json:"fecha_registro" binding:"required"`
 }
 
 func (h *TransaccionHandler) CreateTransaction(c *gin.Context) {
 
 	var transaccionRequest TransactionRequest
 	var transaccion models.Transacciones
+
+	ahora := time.Now()
+	fechaMinima := time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)
 
 	if err := c.ShouldBindJSON(&transaccionRequest); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "El formato de la peticion esta incorrecto"})
@@ -99,7 +103,46 @@ func (h *TransaccionHandler) CreateTransaction(c *gin.Context) {
 	transaccion.TipoRegistroID = transaccionRequest.TipoTransaccion
 	transaccion.Monto = transaccionRequest.Monto
 	transaccion.Descripcion = &transaccionRequest.Descripcion
-	transaccion.FechaRegistro = time.Now()
+
+	fecha := transaccionRequest.FechaRegistro
+
+	if transaccionRequest.FechaRegistro == nil {
+		transaccionRequest.FechaRegistro = &ahora
+	} else {
+		if fecha.After(ahora) {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"success": false,
+				"message": "La fecha de registro no puede ser futura",
+			})
+			return
+		}
+
+		if fecha.Before(fechaMinima) {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"success": false,
+				"message": "La fecha de registro es demasiado antigua",
+			})
+			return
+		}
+		fechaAño, fechaMes, _ := fecha.Date()
+		nowAño, nowMes, _ := ahora.Date()
+
+		if fechaAño == nowAño && fechaMes == nowMes {
+			// ✅ mes actual
+		} else if fechaAño == nowAño && int(fechaMes) == int(nowMes)-1 {
+			// ✅ mes anterior
+		} else if fechaAño == nowAño-1 && nowMes == 1 && fechaMes == 12 {
+			// ✅ caso especial: estamos en enero y permite diciembre del año anterior
+		} else {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"success": false,
+				"message": "Solo puedes registrar movimientos del mes actual o anterior",
+			})
+			return
+		}
+	}
+
+	transaccion.FechaRegistro = *transaccionRequest.FechaRegistro
 
 	switch transaccionRequest.TipoTransaccion {
 	case 1:
@@ -124,6 +167,13 @@ func (h *TransaccionHandler) CreateTransaction(c *gin.Context) {
 	if err := h.TransaccionRepo.CreateTransaction(&transaccion); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Ocurrio un error al crear la transaccion"})
 		return
+	}
+
+	if transaccion.SubCategoriaEgresoID != nil && *transaccion.SubCategoriaEgresoID == userClaims.AhorroId {
+		if err := h.TransaccionRepo.CreateOrUpdateSaving(userClaims.FinanzaId, transaccion.Monto, transaccion.FechaRegistro); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Ocurrio un error al registrar el ahorro mensual"})
+			return
+		}
 	}
 
 	c.JSON(http.StatusCreated, gin.H{"success": true, "message": "La transaccion fue creada corractamente"})

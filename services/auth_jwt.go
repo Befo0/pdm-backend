@@ -16,6 +16,7 @@ type JWTClaims struct {
 	UserName  string `json:"userName"`
 	UserEmail string `json:"userEmail"`
 	FinanzaId uint   `json:"financeId"`
+	AhorroId  uint   `json:"ahorroId"`
 	jwt.RegisteredClaims
 }
 
@@ -32,13 +33,14 @@ func init() {
 	}
 }
 
-func GenerateJWT(userId uint, userName string, userEmail string, finanzaId uint) (string, error) {
+func GenerateJWT(userId uint, userName string, userEmail string, finanzaId, ahorroId uint) (string, error) {
 
 	claims := JWTClaims{
 		UserId:    userId,
 		UserName:  userName,
 		UserEmail: userEmail,
 		FinanzaId: finanzaId,
+		AhorroId:  ahorroId,
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
