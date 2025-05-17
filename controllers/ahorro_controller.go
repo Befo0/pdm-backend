@@ -5,6 +5,7 @@ import (
 	"pdm-backend/models"
 	"pdm-backend/repositories"
 	"pdm-backend/services"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -19,6 +20,27 @@ func NewAhorroHandler(ahorroRepo *repositories.AhorroRepository) *AhorroHandler 
 
 func (h *AhorroHandler) GetSavingsData(c *gin.Context) {
 
+	anioString := c.Query("anio")
+
+	anio, err := strconv.Atoi(anioString)
+	if err != nil || anio < 2000 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Año inválido"})
+		return
+	}
+
+	userClaims, httpCode, jsonResponse := services.GetClaims(c)
+	if userClaims == nil {
+		c.JSON(httpCode, jsonResponse)
+		return
+	}
+
+	ahorroData, err := h.AhorroRepo.GetSavingsData(userClaims.FinanzaId, anio)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Ocurrio un error al conseguir los datos"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"success": true, "data": ahorroData})
 }
 
 type SavingRequest struct {
@@ -45,13 +67,5 @@ func (h *AhorroHandler) CreateSavingGoal(c *gin.Context) {
 
 	if err := h.AhorroRepo.CreateOrUpdateSavingGoal(userClaims.FinanzaId, ahorroRequest.Monto, ahorroRequest.Mes, ahorro.Anio); err != nil {
 	}
-
-}
-
-type AhorroRequest struct {
-	MetaAhorro float64 `json:"meta_ahorro"`
-}
-
-func (h *AhorroHandler) UpdateSaving(c *gin.Context) {
 
 }
