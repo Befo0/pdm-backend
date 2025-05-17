@@ -54,14 +54,6 @@ func (r *UserRepository) CreateUserAndFinance(user *models.User) error {
 			return err
 		}
 
-		ahorro := models.Ahorro{
-			FinanzasID: finanza.ID,
-			Monto:      0,
-		}
-		if err := tx.Create(&ahorro).Error; err != nil {
-			return err
-		}
-
 		return nil
 	})
 
@@ -88,14 +80,25 @@ func (r *UserRepository) GetUserById(id uint) (*models.User, error) {
 	return &user, nil
 }
 
-func (r *UserRepository) GetFinanceByUserId(userId uint) (uint, error) {
-	var finanza models.Finanzas
+type Identificadores struct {
+	FinanzaId uint
+	AhorroId  uint
+}
 
-	if err := r.DB.Where("user_id = ? AND tipo_finanzas_id = ?", userId, 1).First(&finanza).Error; err != nil {
-		return 0, err
+func (r *UserRepository) GetFinanceAndSavingSubCategoryByUserId(userId uint) (*Identificadores, error) {
+	var identificadores Identificadores
+
+	err := r.DB.Model(&models.Finanzas{}).
+		Select("finanzas.id AS finanza_id, sub_categoria_egresos.id AS ahorro_id").
+		Joins("JOIN sub_categoria_egresos ON finanzas.id = sub_categoria_egresos.finanzas_id").
+		Where("finanzas.user_id = ? AND finanzas.tipo_finanzas_id = ? AND sub_categoria_egresos.nombre_sub_categoria = ?", userId, 1, "Ahorro").
+		Scan(&identificadores).Error
+
+	if err != nil {
+		return nil, err
 	}
 
-	return finanza.ID, nil
+	return &identificadores, nil
 }
 
 func (r *UserRepository) UpdateUser(user *models.User) error {

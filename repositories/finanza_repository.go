@@ -98,7 +98,7 @@ func (r *FinanzaRepository) GetSavingsSummary(finanzaId uint, inicio, final time
 	errCh := make(chan error, 3)
 
 	go func() {
-		err := r.DB.Model(models.Ahorro{}).Where("finanzas_id = ?", finanzaId).Select("monto").Scan(&metaAhorro).Error
+		err := r.DB.Model(models.AhorroMensual{}).Where("finanzas_id = ?", finanzaId).Select("monto").Scan(&metaAhorro).Error
 		errCh <- err
 	}()
 

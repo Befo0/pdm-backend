@@ -22,7 +22,8 @@ func main() {
 		&models.CategoriaEgreso{},
 		&models.SubCategoriaEgreso{},
 		&models.Transacciones{},
-		&models.Ahorro{},
+		&models.MetaMensual{},
+		&models.AhorroMensual{},
 		&models.Invitaciones{},
 	)
 	if err != nil {
