@@ -176,5 +176,5 @@ func (h *TransaccionHandler) CreateTransaction(c *gin.Context) {
 		}
 	}
 
-	c.JSON(http.StatusCreated, gin.H{"success": true, "message": "La transaccion fue creada corractamente"})
+	c.JSON(http.StatusCreated, gin.H{"success": true, "message": "La transaccion fue creada correctamente"})
 }

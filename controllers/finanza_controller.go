@@ -1,10 +1,13 @@
 package controllers
 
 import (
-	"github.com/gin-gonic/gin"
 	"net/http"
 	"pdm-backend/repositories"
 	"pdm-backend/services"
+	"strconv"
+	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
 type FinanzaHandler struct {
@@ -26,11 +29,23 @@ func (h *FinanzaHandler) GetDashboardSummary(c *gin.Context) {
 		return
 	}
 
-	inicioMes, finMes, httpCode, jsonResponse, ok := services.ParseMonthAndYear(c)
-	if !ok {
-		c.JSON(httpCode, jsonResponse)
+	mesString := c.Query("mes")
+	anioString := c.Query("anio")
+
+	mes, err := strconv.Atoi(mesString)
+	if err != nil || mes < 1 || mes > 12 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Mes inválido"})
 		return
 	}
+
+	anio, err := strconv.Atoi(anioString)
+	if err != nil || anio < 1900 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Año inválido"})
+		return
+	}
+
+	inicioMes := time.Date(anio, time.Month(mes), 1, 0, 0, 0, 0, time.UTC)
+	finMes := inicioMes.AddDate(0, 1, 0)
 
 	go func() {
 		resumen, err := h.FinanceRepo.GetFinanceSummary(userClaims.FinanzaId, inicioMes, finMes)
@@ -50,7 +65,7 @@ func (h *FinanzaHandler) GetDashboardSummary(c *gin.Context) {
 	}()
 
 	go func() {
-		resumen, err := h.FinanceRepo.GetSavingsSummary(userClaims.FinanzaId, inicioMes, finMes)
+		resumen, err := h.FinanceRepo.GetSavingsSummary(userClaims.FinanzaId, mes, anio)
 		if err == nil {
 			resumenAhorro = resumen
 		}

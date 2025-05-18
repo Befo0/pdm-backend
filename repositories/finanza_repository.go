@@ -1,6 +1,7 @@
 package repositories
 
 import (
+	"errors"
 	"pdm-backend/models"
 	"time"
 
@@ -27,16 +28,16 @@ func SumarMonto(db *gorm.DB, modelo interface{}, finanzaId uint, tipo int, inici
 }
 
 type Resumen struct {
-	IngresosTotales float64
-	EgresosTotales  float64
-	Diferencia      float64
+	IngresosTotales float64 `gorm:"column:ingresos_totales"`
+	EgresosTotales  float64 `gorm:"column:egresos_totales"`
+	Diferencia      float64 `gorm:"-"`
 }
 
 func (r *FinanzaRepository) GetFinanceSummary(finanzaId uint, inicio, final time.Time) (gin.H, error) {
 
 	var resumen Resumen
 	err := r.DB.Model(&models.Transacciones{}).
-		Select("SUM(CASE WHEN tipo_registro_id = 1 THEN monto ELSE 0 END) AS ingresos, SUM(CASE WHEN tipo_registro_id = 2 THEN monto ELSE 0 END) AS egresos").
+		Select("SUM(CASE WHEN tipo_registro_id = 1 THEN monto ELSE 0 END) AS ingresos_totales, SUM(CASE WHEN tipo_registro_id = 2 THEN monto ELSE 0 END) AS egresos_totales").
 		Where("finanzas_id = ? AND fecha_registro >= ? AND fecha_registro < ? AND deleted_at IS NULL", 1, inicio, final).
 		Scan(&resumen).Error
 	if err != nil {
@@ -91,20 +92,27 @@ func (r *FinanzaRepository) GetEgresoSummary(finanzaId uint, inicio, final time.
 	}, nil
 }
 
-func (r *FinanzaRepository) GetSavingsSummary(finanzaId uint, inicio, final time.Time) (gin.H, error) {
+func (r *FinanzaRepository) GetSavingsSummary(finanzaId uint, mes, anio int) (gin.H, error) {
 	var metaAhorro float64
 	var ahorroGuardado float64
-	var subCategoriaId uint
-	errCh := make(chan error, 3)
+
+	var meta models.MetaMensual
+	errCh := make(chan error, 2)
 
 	go func() {
-		err := r.DB.Model(models.AhorroMensual{}).Where("finanzas_id = ?", finanzaId).Select("monto").Scan(&metaAhorro).Error
+		err := r.DB.Model(models.MetaMensual{}).Where("finanzas_id = ? AND mes = ? AND anio = ?", finanzaId, mes, anio).
+			First(&meta).Error
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			errCh <- nil
+			return
+		}
 		errCh <- err
 	}()
 
 	go func() {
-		err := r.DB.Model(models.SubCategoriaEgreso{}).Where("finanzas_id  = ? AND nombre_sub_categoria = ?", finanzaId, "Ahorro").
-			Select("id").Scan(&subCategoriaId).Error
+		err := r.DB.Model(models.AhorroMensual{}).
+			Where("finanzas_id = ? AND mes = ? AND anio = ?", finanzaId, mes, anio).
+			Select("monto").Scan(&ahorroGuardado).Error
 		errCh <- err
 	}()
 
@@ -114,17 +122,7 @@ func (r *FinanzaRepository) GetSavingsSummary(finanzaId uint, inicio, final time
 		}
 	}
 
-	go func() {
-		err := r.DB.Model(models.Transacciones{}).
-			Where("finanzas_id = ? AND tipo_registro_id = ? AND fecha_registro >= ? AND fecha_registro < ? AND sub_categoria_egreso_id = ?", finanzaId, 2, inicio, final, subCategoriaId).
-			Select("COALESCE(SUM(monto), 0)").Scan(&ahorroGuardado).Error
-		errCh <- err
-	}()
-
-	if err := <-errCh; err != nil {
-		return nil, err
-	}
-
+	metaAhorro = meta.MontoMeta
 	porcentajeAhorro := 0.0
 
 	if metaAhorro != 0 {
@@ -159,7 +157,35 @@ func (r *FinanzaRepository) GetDataSummary(inicioMes, finMes time.Time, finanzaI
 		return nil, err
 	}
 
+	mes := int(inicioMes.Month())
+	anio := inicioMes.Year()
+
 	for index := range resultados {
+
+		if resultados[index].CategoriaNombre == "Ahorro" {
+			var meta models.MetaMensual
+			err := r.DB.Model(models.MetaMensual{}).
+				Where("finanzas_id = ? AND mes = ? AND anio = ?", finanzaId, mes, anio).
+				First(&meta).Error
+			if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+				return nil, err
+			}
+
+			var ahorroMensual models.AhorroMensual
+			err = r.DB.Model(models.AhorroMensual{}).
+				Where("finanzas_id = ? AND mes = ? AND anio = ?", finanzaId, mes, anio).
+				First(&ahorroMensual).Error
+			if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+				return nil, err
+			}
+
+			resultados[index].TotalPresupuesto = meta.MontoMeta
+			resultados[index].Gasto = ahorroMensual.Monto
+			resultados[index].Diferencia = meta.MontoMeta - ahorroMensual.Monto
+
+			continue
+		}
+
 		var totalGasto float64
 
 		err := r.DB.Model(models.Transacciones{}).Where("finanzas_id = ? AND tipo_registro_id = ? AND fecha_registro >= ? AND fecha_registro < ? AND categoria_egreso_id = ?", finanzaId, 2, inicioMes, finMes, resultados[index].CategoriaId).Select("COALESCE(SUM(monto), 0)").Scan(&totalGasto).Error
@@ -172,7 +198,6 @@ func (r *FinanzaRepository) GetDataSummary(inicioMes, finMes time.Time, finanzaI
 
 		resultados[index].Gasto = totalGasto
 		resultados[index].Diferencia = diferencia
-
 	}
 
 	return &resultados, nil

@@ -14,13 +14,13 @@ func UserRouter(r *gin.Engine) {
 	financeRepo := repositories.NewFinanzaRepository(repositories.GetDB())
 	handler := controllers.NewUserHandler(userRepo, financeRepo)
 
-	user := r.Group("/user")
+	user := r.Group("/usuario")
 	user.POST("/login", handler.Login)
-	user.POST("/register", handler.Register)
+	user.POST("/registro", handler.Register)
 
 	user.Use(middlewares.AuthMiddleware())
 	{
-		user.PATCH("/change-profile", handler.UpdateProfile)
-		user.PATCH("/change-password", handler.UpdatePassword)
+		user.PATCH("/cambiar-perfil", handler.UpdateProfile)
+		user.PATCH("/cambiar-contrasena", handler.UpdatePassword)
 	}
 }

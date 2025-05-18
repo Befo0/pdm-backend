@@ -6,6 +6,7 @@ import (
 	"pdm-backend/models"
 	"pdm-backend/repositories"
 	"pdm-backend/services"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
@@ -39,18 +40,15 @@ func (h *Handler) Register(c *gin.Context) {
 		return
 	}
 
-	_, err = h.UserRepo.GetUserByEmail(newUser.Correo)
-
-	if err == nil {
-		c.JSON(http.StatusOK, gin.H{"sucess": true, "message": "Ese correo ya esta registrado"})
-		return
-	}
-
 	newUser.Contrasena = string(hashedPassword)
 
 	err = h.UserRepo.CreateUserAndFinance(&newUser)
 
 	if err != nil {
+		if strings.Contains(err.Error(), "UNIQUE constraint failed") {
+			c.JSON(http.StatusConflict, gin.H{"success": false, "message": "El correo electronico ya esta registrado"})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Error al crear el usuario y la finanza"})
 		return
 	}

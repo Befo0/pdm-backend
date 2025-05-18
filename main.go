@@ -31,6 +31,7 @@ func main() {
 	routes.CategoriaRouter(r)
 	routes.TransaccionRouter(r)
 	routes.SubCategoriaRouter(r)
+	routes.IngresosRouter(r)
 	routes.AhorroRouter(r)
 
 	PORT := os.Getenv("PORT")

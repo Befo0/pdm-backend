@@ -20,6 +20,6 @@ func IngresosRouter(r *gin.Engine) {
 		ingresos.GET("/lista", handler.GetIncomesList)
 		ingresos.GET("/ingreso/:id", handler.GetIncomeById)
 		ingresos.POST("/crear", handler.CreateIncome)
-		ingresos.PUT("/actualizar", handler.UpdateIncome)
+		ingresos.PUT("/actualizar/:id", handler.UpdateIncome)
 	}
 }

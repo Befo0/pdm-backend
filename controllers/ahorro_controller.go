@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"net/http"
-	"pdm-backend/models"
 	"pdm-backend/repositories"
 	"pdm-backend/services"
 	"strconv"
@@ -52,7 +51,6 @@ type SavingRequest struct {
 func (h *AhorroHandler) CreateSavingGoal(c *gin.Context) {
 
 	var ahorroRequest SavingRequest
-	var ahorro models.AhorroMensual
 
 	if err := c.ShouldBindJSON(&ahorroRequest); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "El formato de la peticion esta incorrecto"})
@@ -65,7 +63,10 @@ func (h *AhorroHandler) CreateSavingGoal(c *gin.Context) {
 		return
 	}
 
-	if err := h.AhorroRepo.CreateOrUpdateSavingGoal(userClaims.FinanzaId, ahorroRequest.Monto, ahorroRequest.Mes, ahorro.Anio); err != nil {
+	if err := h.AhorroRepo.CreateOrUpdateSavingGoal(userClaims.FinanzaId, ahorroRequest.Monto, ahorroRequest.Mes, ahorroRequest.Anio); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Hubo un error al crear o actualizar la meta mensual"})
+		return
 	}
 
+	c.JSON(http.StatusCreated, gin.H{"success": true, "message": "La meta fue creada/actualizada correctamente"})
 }

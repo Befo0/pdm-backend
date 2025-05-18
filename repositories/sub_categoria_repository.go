@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"pdm-backend/models"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -64,9 +65,22 @@ type SubCategoriasLista struct {
 func (r *SubCategoriaRepository) GetSubCategoriesList(finanzaId uint) ([]SubCategoriasLista, error) {
 	var subCategoria []SubCategoriasLista
 
+	ahora := time.Now()
+	mes := int(ahora.Month())
+	anio := ahora.Year()
+
 	err := r.DB.Model(models.SubCategoriaEgreso{}).Where("sub_categoria_egresos.finanzas_id = ?", finanzaId).
-		Select("sub_categoria_egresos.id AS sub_categoria_id, categoria_egresos.nombre_categoria AS categoria_nombre, sub_categoria_egresos.nombre_sub_categoria AS sub_categoria_nombre, tipo_presupuestos.nombre_tipo_presupuesto AS tipo_gasto, sub_categoria_egresos.presupuesto_mensual AS presupuesto, users.nombre AS nombre_usuario").
+		Select(`sub_categoria_egresos.id AS sub_categoria_id, 
+		categoria_egresos.nombre_categoria AS categoria_nombre, 
+		sub_categoria_egresos.nombre_sub_categoria AS sub_categoria_nombre, 
+		tipo_presupuestos.nombre_tipo_presupuesto AS tipo_gasto, 
+		CASE
+			WHEN sub_categoria_egresos.nombre_sub_categoria = 'Ahorro' THEN meta_mensuals.monto_meta
+			ELSE sub_categoria_egresos.presupuesto_mensual
+		END AS presupuesto,
+		users.nombre AS nombre_usuario`).
 		Joins("LEFT JOIN categoria_egresos ON sub_categoria_egresos.categoria_egreso_id = categoria_egresos.id").
+		Joins("LEFT JOIN meta_mensuals ON meta_mensuals.finanzas_id = sub_categoria_egresos.finanzas_id AND meta_mensuals.mes = ? AND meta_mensuals.anio = ?", mes, anio).
 		Joins("LEFT JOIN tipo_presupuestos ON sub_categoria_egresos.tipo_presupuesto_id = tipo_presupuestos.id").
 		Joins("LEFT JOIN users ON sub_categoria_egresos.user_id = users.id").
 		Scan(&subCategoria).Error

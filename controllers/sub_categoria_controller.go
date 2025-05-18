@@ -6,6 +6,7 @@ import (
 	"pdm-backend/models"
 	"pdm-backend/repositories"
 	"pdm-backend/services"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -110,6 +111,12 @@ func (h *SubCategoriaHandler) CreateSubCategoria(c *gin.Context) {
 
 	if err := c.ShouldBindJSON(&subCategoriaRequest); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "El formato de la peticion esta incorrecto"})
+		return
+	}
+
+	nombre := strings.TrimSpace(strings.ToLower(subCategoriaRequest.NombreSubCategoria))
+	if nombre == "ahorro" {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "No puedes crear otra sub categoria llamada Ahorro"})
 		return
 	}
 

@@ -75,30 +75,33 @@ func (r *TransaccionRepository) GetTransactionById(transaccionId *uint) (*Transa
 	tx := r.DB.Model(models.Transacciones{}).Where("transacciones.id = ?", transaccionId).
 		Select(`
 		transacciones.tipo_registro_id AS tipo_movimiento_id,
-		tipo_registros.nombre_tipo_registro AS tipo_movimiento, 
+		tipo_registros.nombre_tipo_registro AS tipo_movimiento,
 		CASE
 			WHEN transacciones.tipo_registro_id = 1 THEN tipo_ingresos.nombre_ingresos
 			WHEN transacciones.tipo_registro_id = 2 THEN sub_categoria_egresos.nombre_sub_categoria
 			ELSE ''
 		END AS movimiento,
 		CASE
-			WHEN transacciones.tipo_registro_id = 2 THEN categoria_egresos.nombre_categoria 
+			WHEN transacciones.tipo_registro_id = 2 THEN categoria_egresos.nombre_categoria
 			ELSE ''
-		END AS categoria, 
-		CASE 
-			WHEN transacciones.tipo_registro_id = 2 THEN tipo_presupuestos.nombre_tipo_presupuesto 
+		END AS categoria,
+		CASE
+			WHEN transacciones.tipo_registro_id = 2 THEN tipo_presupuestos.nombre_tipo_presupuesto
 			ELSE ''
-		END AS tipo_gasto, 
-		sub_categoria_egresos.presupuesto_mensual AS presupuesto, 
-		transacciones.monto AS monto, 
-		transacciones.descripcion AS descripcion_gasto, 
-		users.nombre AS nombre_usuario`).
+		END AS tipo_gasto,
+		meta_mensuals.monto_meta AS presupuesto,
+		transacciones.monto AS monto,
+		transacciones.descripcion AS descripcion_gasto,
+		users.nombre AS nombre_usuario
+	`).
 		Joins("LEFT JOIN tipo_registros ON tipo_registros.id = transacciones.tipo_registro_id").
 		Joins("LEFT JOIN tipo_ingresos ON tipo_ingresos.id = transacciones.tipo_ingresos_id").
 		Joins("LEFT JOIN sub_categoria_egresos ON sub_categoria_egresos.id = transacciones.sub_categoria_egreso_id").
 		Joins("LEFT JOIN categoria_egresos ON categoria_egresos.id = transacciones.categoria_egreso_id").
 		Joins("LEFT JOIN tipo_presupuestos ON tipo_presupuestos.id = transacciones.tipo_presupuesto_id").
-		Joins("LEFT JOIN users ON users.id = transacciones.user_id").Scan(&transaccion)
+		Joins("LEFT JOIN meta_mensuals ON meta_mensuals.finanzas_id = transacciones.finanzas_id AND meta_mensuals.mes = EXTRACT(MONTH FROM transacciones.fecha_registro) AND meta_mensuals.anio = EXTRACT(YEAR FROM transacciones.fecha_registro)").
+		Joins("LEFT JOIN users ON users.id = transacciones.user_id").
+		Scan(&transaccion)
 
 	if tx.RowsAffected == 0 {
 		return nil, gorm.ErrRecordNotFound
@@ -121,7 +124,7 @@ func (r *TransaccionRepository) CreateOrUpdateSaving(finanzasId uint, monto floa
 	mes := int(fecha.Month())
 
 	var ahorro models.AhorroMensual
-	err := r.DB.Model(models.AhorroMensual{}).Where("finanzasId = ? AND anio = ? AND mes = ?", finanzasId, anio, mes).First(&ahorro).Error
+	err := r.DB.Model(models.AhorroMensual{}).Where("finanzas_Id = ? AND anio = ? AND mes = ?", finanzasId, anio, mes).First(&ahorro).Error
 
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {

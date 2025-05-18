@@ -33,7 +33,7 @@ func (h *IngresosHandler) GetIncomes(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, opcionesIngresos)
+	c.JSON(http.StatusOK, gin.H{"ingresos": opcionesIngresos})
 }
 
 func (h *IngresosHandler) GetIncomesList(c *gin.Context) {

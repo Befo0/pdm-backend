@@ -18,6 +18,7 @@ func NewAhorroRepository(db *gorm.DB) *AhorroRepository {
 var meses = []string{"Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"}
 
 type AhorroResponse struct {
+	Mes                    int     `json:"mes"`
 	NombreMes              string  `json:"nombre_mes"`
 	Anio                   int     `json:"anio"`
 	MetaAhorro             float64 `json:"meta_ahorro"`
@@ -27,40 +28,48 @@ type AhorroResponse struct {
 
 func (r *AhorroRepository) GetSavingsData(finanzaId uint, anio int) ([]AhorroResponse, error) {
 
+	var resultados []struct {
+		Mes           int
+		MontoMeta     float64
+		MontoAhorrado float64
+	}
+
+	err := r.DB.Model(models.MetaMensual{}).
+		Select(`
+			meta_mensuals.mes,
+			meta_mensuals.anio,
+			meta_mensuals.monto_meta,
+			COALESCE(ahorro_mensuals.monto, 0) AS monto_ahorrado
+		`).
+		Joins(`
+			LEFT JOIN ahorro_mensuals
+			ON meta_mensuals.finanzas_id = ahorro_mensuals.finanzas_id
+			AND meta_mensuals.mes = ahorro_mensuals.mes
+			AND meta_mensuals.anio = ahorro_mensuals.anio
+		`).
+		Where("meta_mensuals.finanzas_id = ? AND meta_mensuals.anio = ?", finanzaId, anio).
+		Order("mes ASC").
+		Scan(&resultados).Error
+
+	if err != nil {
+		return nil, err
+	}
+
 	var ahorroResponse []AhorroResponse
-
-	for index, mes := range meses {
-		var metaAhorro models.MetaMensual
-		var ahorroMensual models.AhorroMensual
-
-		err := r.DB.Model(models.MetaMensual{}).Where("finanzas_id = ?, anio = ?, mes = ?", finanzaId, anio, index+1).
-			First(&metaAhorro).Error
-		if err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				continue
-			}
-			return nil, err
-		}
-		err = r.DB.Model(models.AhorroMensual{}).Where("finanzas_id = ?, anio = ?, mes = ?", finanzaId, anio, index+1).
-			First(&ahorroMensual).Error
-		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, err
-		}
-
-		var porcentaje float64
-		if metaAhorro.MontoMeta > 0 {
-			porcentaje = (ahorroMensual.Monto / metaAhorro.MontoMeta) * 100
-
+	for _, r := range resultados {
+		porcentaje := 0.0
+		if r.MontoAhorrado != 0 {
+			porcentaje = (r.MontoAhorrado / r.MontoMeta) * 100
 		}
 
 		ahorroResponse = append(ahorroResponse, AhorroResponse{
-			NombreMes:              mes,
-			Anio:                   metaAhorro.Anio,
-			MetaAhorro:             metaAhorro.MontoMeta,
-			MontoAhorrado:          ahorroMensual.Monto,
+			Mes:                    r.Mes,
+			NombreMes:              meses[r.Mes-1],
+			Anio:                   anio,
+			MetaAhorro:             r.MontoMeta,
+			MontoAhorrado:          r.MontoAhorrado,
 			PorcentajeCumplimiento: porcentaje,
 		})
-
 	}
 
 	return ahorroResponse, nil
@@ -69,7 +78,7 @@ func (r *AhorroRepository) GetSavingsData(finanzaId uint, anio int) ([]AhorroRes
 func (r *AhorroRepository) CreateOrUpdateSavingGoal(finanzaId uint, monto float64, mes, anio int) error {
 
 	var ahorro models.MetaMensual
-	err := r.DB.Model(models.MetaMensual{}).Where("finanzasId = ? AND anio = ? AND mes = ?", finanzaId, anio, mes).
+	err := r.DB.Model(models.MetaMensual{}).Where("finanzas_Id = ? AND anio = ? AND mes = ?", finanzaId, anio, mes).
 		First(&ahorro).Error
 
 	if err != nil {
