@@ -9,6 +9,5 @@ type User struct {
 	Nombre           string             `json:"nombre" gorm:"not null"`
 	Correo           string             `json:"correo" gorm:"uniqueIndex"`
 	Contrasena       string             `json:"contrasena" gorm:"size:255;not null"`
-	Finanzas         []Finanzas         `json:"finanzas" gorm:"foreignKey:UserID"`
 	FinanzasConjunto []FinanzasConjunto `json:"finanzas_conjunto" gorm:"foreignKey:UserID"`
 }

@@ -14,7 +14,7 @@ func ParseUint(c *gin.Context) (*uint, int, gin.H) {
 	if err != nil {
 		return nil, http.StatusBadRequest, gin.H{"success": false, "message": "El id no es un numero valido"}
 	}
-	idCategoria := uint(idUint)
+	id := uint(idUint)
 
-	return &idCategoria, 0, nil
+	return &id, 0, nil
 }
