@@ -12,8 +12,6 @@ func WebSocketRouter(r *gin.Engine) {
 	webSocket.Use(middlewares.AuthMiddleware())
 	{
 
-		go handleBroadCast()
-
 		webSocket.GET("/finanza/:id", func(c *gin.Context) {
 			handleConnection(c)
 		})

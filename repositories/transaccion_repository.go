@@ -5,6 +5,7 @@ import (
 	"pdm-backend/models"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
@@ -154,4 +155,79 @@ func (r *TransaccionRepository) GetSavingSubCategorie(finanzaId uint) (uint, err
 	}
 
 	return subCategoriaId, nil
+}
+
+type PayloadEvent struct {
+	Event   string      `json:"event"`
+	Payload interface{} `json:"payload"`
+}
+
+type BroadCastMessage struct {
+	FinanzaId uint           `json:"finanza_id"`
+	EventInfo []PayloadEvent `json:"event_info"`
+}
+
+func (r *TransaccionRepository) BuildWebSocketEvent(finanzaId uint, fecha time.Time) (*BroadCastMessage, error) {
+
+	var eventInfo []PayloadEvent
+	var finanzaRepo *FinanzaRepository
+	errCh := make(chan error, 4)
+
+	inicioMes := time.Date(fecha.Year(), fecha.Month(), 1, 0, 0, 0, 0, time.UTC)
+	finMes := inicioMes.AddDate(0, 1, 0)
+
+	var finanzaPrincipal gin.H
+	var finanzaDatos []DashboardData
+	var transacciones []ListaTransacciones
+
+	go func() {
+		resumen, err := finanzaRepo.GetDashboardSummary(finanzaId, inicioMes, finMes)
+		finanzaPrincipal = resumen
+
+		errCh <- err
+	}()
+
+	go func() {
+		resumen, err := finanzaRepo.GetDataSummary(inicioMes, finMes, finanzaId)
+		finanzaDatos = resumen
+		errCh <- err
+	}()
+
+	go func() {
+		lista, err := r.GetTransactions(inicioMes, finMes, finanzaId)
+		transacciones = lista
+		errCh <- err
+	}()
+
+	for i := 0; i < 4; i++ {
+		if err := <-errCh; err != nil {
+			return nil, err
+		}
+	}
+
+	nuevoResumen := PayloadEvent{
+		Event:   "resumen_finanza",
+		Payload: finanzaPrincipal,
+	}
+
+	nuevaData := PayloadEvent{
+		Event:   "datos_finanza",
+		Payload: finanzaDatos,
+	}
+
+	nuevaLista := PayloadEvent{
+		Event:   "lista_transacciones",
+		Payload: transacciones,
+	}
+
+	eventInfo = append(eventInfo, nuevoResumen)
+	eventInfo = append(eventInfo, nuevaData)
+	eventInfo = append(eventInfo, nuevaLista)
+
+	webSocketEvent := BroadCastMessage{
+		FinanzaId: finanzaId,
+		EventInfo: eventInfo,
+	}
+
+	return &webSocketEvent, nil
 }

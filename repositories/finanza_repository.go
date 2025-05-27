@@ -28,9 +28,9 @@ func SumarMonto(db *gorm.DB, modelo interface{}, finanzaId uint, tipo int, inici
 }
 
 type Resumen struct {
-	IngresosTotales float64 `gorm:"column:ingresos_totales"`
-	EgresosTotales  float64 `gorm:"column:egresos_totales"`
-	Diferencia      float64 `gorm:"-"`
+	IngresosTotales float64 `json:"ingresos_totales" gorm:"column:ingresos_totales"`
+	EgresosTotales  float64 `json:"egresos_totales" gorm:"column:egresos_totales"`
+	Diferencia      float64 `json:"diferencia" gorm:"-"`
 }
 
 func (r *FinanzaRepository) GetFinanceSummary(finanzaId uint, inicio, final time.Time) (gin.H, error) {
@@ -136,6 +136,53 @@ func (r *FinanzaRepository) GetSavingsSummary(finanzaId uint, mes, anio int) (gi
 	}, nil
 }
 
+func (r FinanzaRepository) GetDashboardSummary(finanzaId uint, inicioMes, finMes time.Time) (gin.H, error) {
+
+	var resumenFinanciero gin.H
+	var resumenEgresos gin.H
+	var resumenAhorro gin.H
+
+	errCh := make(chan error, 3)
+
+	go func() {
+		resumen, err := r.GetFinanceSummary(finanzaId, inicioMes, finMes)
+		if err == nil {
+			resumenFinanciero = resumen
+		}
+		errCh <- err
+
+	}()
+
+	go func() {
+		resumen, err := r.GetEgresoSummary(finanzaId, inicioMes, finMes)
+		if err == nil {
+			resumenEgresos = resumen
+		}
+		errCh <- err
+	}()
+
+	go func() {
+		resumen, err := r.GetSavingsSummary(finanzaId, int(inicioMes.Month()), inicioMes.Year())
+		if err == nil {
+			resumenAhorro = resumen
+		}
+		errCh <- err
+	}()
+
+	for i := 0; i < 3; i++ {
+		if err := <-errCh; err != nil {
+			return nil, err
+		}
+	}
+
+	return gin.H{
+		"resumen_financiero": resumenFinanciero,
+		"resumen_egresos":    resumenEgresos,
+		"resumen_ahorros":    resumenAhorro,
+	}, nil
+
+}
+
 type DashboardData struct {
 	CategoriaId      uint `json:"-"`
 	CategoriaNombre  string
@@ -144,7 +191,7 @@ type DashboardData struct {
 	Diferencia       float64
 }
 
-func (r *FinanzaRepository) GetDataSummary(inicioMes, finMes time.Time, finanzaId uint) (*[]DashboardData, error) {
+func (r *FinanzaRepository) GetDataSummary(inicioMes, finMes time.Time, finanzaId uint) ([]DashboardData, error) {
 
 	var resultados []DashboardData
 
@@ -200,5 +247,5 @@ func (r *FinanzaRepository) GetDataSummary(inicioMes, finMes time.Time, finanzaI
 		resultados[index].Diferencia = diferencia
 	}
 
-	return &resultados, nil
+	return resultados, nil
 }

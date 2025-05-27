@@ -3,25 +3,21 @@ package websockets
 import (
 	"log"
 	"net/http"
+	"pdm-backend/repositories"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 )
 
-type BroadCastMessage struct {
-	FinanzaId uint
-	Payload   gin.H
-}
-
 var clientsFinanza = make(map[uint]map[*websocket.Conn]bool)
-var mensajeBroadcast = make(chan BroadCastMessage)
+var MensajeBroadcast = make(chan repositories.BroadCastMessage)
 
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool { return true },
 }
 
-func handleConnection(c *gin.Context) {
+func HandleConnection(c *gin.Context) {
 
 	idParam := c.Param("id")
 
@@ -60,13 +56,13 @@ func handleConnection(c *gin.Context) {
 	}
 }
 
-func handleBroadCast() {
+func HandleBroadCast() {
 	for {
-		msg := <-mensajeBroadcast
+		msg := <-MensajeBroadcast
 
 		clients := clientsFinanza[msg.FinanzaId]
 		for client := range clients {
-			if err := client.WriteJSON(msg.Payload); err != nil {
+			if err := client.WriteJSON(msg.EventInfo); err != nil {
 				log.Println("Error enviando mensaje")
 				client.Close()
 				delete(clients, client)

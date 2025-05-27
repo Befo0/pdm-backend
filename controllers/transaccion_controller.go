@@ -6,6 +6,7 @@ import (
 	"pdm-backend/models"
 	"pdm-backend/repositories"
 	"pdm-backend/services"
+	"pdm-backend/websockets"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -164,14 +165,14 @@ func (h *TransaccionHandler) CreateTransaction(c *gin.Context) {
 
 		if fechaAño == nowAño && fechaMes == nowMes {
 			// ✅ mes actual
-		} else if fechaAño == nowAño && int(fechaMes) == int(nowMes)-1 {
+			//} else if fechaAño == nowAño && int(fechaMes) == int(nowMes)-1 {
 			// ✅ mes anterior
-		} else if fechaAño == nowAño-1 && nowMes == 1 && fechaMes == 12 {
+			//} else if fechaaño == nowaño-1 && nowmes == 1 && fechames == 12 {
 			// ✅ caso especial: estamos en enero y permite diciembre del año anterior
 		} else {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"success": false,
-				"message": "Solo puedes registrar movimientos del mes actual o anterior",
+				"message": "Solo puedes registrar movimientos del mes actual",
 			})
 			return
 		}
@@ -210,6 +211,8 @@ func (h *TransaccionHandler) CreateTransaction(c *gin.Context) {
 			return
 		}
 	}
+
+	websockets.MensajeBroadcast <- webSocketEvent
 
 	c.JSON(http.StatusCreated, gin.H{"success": true, "message": "La transaccion fue creada correctamente"})
 }
