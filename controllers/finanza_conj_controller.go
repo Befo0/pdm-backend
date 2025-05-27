@@ -88,3 +88,13 @@ func (h *FinanzaConjHandler) JoinUser(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"success": true, "message": "El usuario se ha unido con exito"})
 }
+func (h *FinanzaConjHandler) GetConjFinances(c *gin.Context) {
+
+	userClaims, httpCode, jsonResponse := services.GetClaims(c)
+	if userClaims == nil {
+		c.JSON(httpCode, jsonResponse)
+		return
+	}
+
+	finanzasConjuntas, err := h.FinanceConjRepo.GetConjFinances(userClaims.UserId)
+}

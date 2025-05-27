@@ -21,13 +21,27 @@ func NewIngresosHandler(ingresosRepo *repositories.IngresosRepository) *Ingresos
 
 func (h *IngresosHandler) GetIncomes(c *gin.Context) {
 
+	var finanzaId uint
+
 	userClaims, httpCode, jsonResponse := services.GetClaims(c)
 	if userClaims == nil {
 		c.JSON(httpCode, jsonResponse)
 		return
 	}
 
-	opcionesIngresos, err := h.IngresosRepo.GetIncomes(userClaims.FinanzaId)
+	id, err := services.GetFinanceId(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "El formato del query es incorrecto"})
+		return
+	}
+
+	finanzaId = userClaims.FinanzaId
+
+	if id != 0 {
+		finanzaId = id
+	}
+
+	opcionesIngresos, err := h.IngresosRepo.GetIncomes(finanzaId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Ocurrio un error al conseguir las opciones de ingresos"})
 		return
@@ -38,13 +52,27 @@ func (h *IngresosHandler) GetIncomes(c *gin.Context) {
 
 func (h *IngresosHandler) GetIncomesList(c *gin.Context) {
 
+	var finanzaId uint
+
 	userClaims, httpCode, jsonResponse := services.GetClaims(c)
 	if userClaims == nil {
 		c.JSON(httpCode, jsonResponse)
 		return
 	}
 
-	listaIngreso, err := h.IngresosRepo.GetIncomesList(userClaims.FinanzaId)
+	id, err := services.GetFinanceId(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "El formato del query es incorrecto"})
+		return
+	}
+
+	finanzaId = userClaims.FinanzaId
+
+	if id != 0 {
+		finanzaId = id
+	}
+
+	listaIngreso, err := h.IngresosRepo.GetIncomesList(finanzaId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Ocurrio un error al conseguir la lista de ingresos"})
 		return
@@ -91,6 +119,7 @@ func (h *IngresosHandler) CreateIncome(c *gin.Context) {
 
 	var ingresoRequest IncomeRequest
 	var ingreso models.TipoIngresos
+	var finanzaId uint
 
 	if err := c.ShouldBindJSON(&ingresoRequest); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "El formato de la peticion esta incorrecto"})
@@ -103,7 +132,19 @@ func (h *IngresosHandler) CreateIncome(c *gin.Context) {
 		return
 	}
 
-	ingreso.FinanzasID = userClaims.FinanzaId
+	id, err := services.GetFinanceId(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "El formato del query es incorrecto"})
+		return
+	}
+
+	finanzaId = userClaims.FinanzaId
+
+	if id != 0 {
+		finanzaId = id
+	}
+
+	ingreso.FinanzasID = finanzaId
 	ingreso.UserID = userClaims.UserId
 	ingreso.NombreIngresos = ingresoRequest.NombreIngreso
 	ingreso.Descripcion = ingresoRequest.DescripcionIngreso

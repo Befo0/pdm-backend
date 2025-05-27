@@ -22,13 +22,27 @@ func NewCategoriaHandler(categoriaRepo *repositories.CategoriaRepository) *Categ
 
 func (h *CategoriaHandler) GetCategories(c *gin.Context) {
 
+	var finanzaId uint
+
 	userClaims, httpCode, jsonResponse := services.GetClaims(c)
 	if userClaims == nil {
 		c.JSON(httpCode, jsonResponse)
 		return
 	}
 
-	categorias, err := h.CategoriaRepo.GetCategories(userClaims.FinanzaId)
+	id, err := services.GetFinanceId(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "El formato del query es incorrecto"})
+		return
+	}
+
+	finanzaId = userClaims.FinanzaId
+
+	if id != 0 {
+		finanzaId = id
+	}
+
+	categorias, err := h.CategoriaRepo.GetCategories(finanzaId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Ocurrio un error al conseguir las categorias de la finanza"})
 		return
@@ -38,6 +52,8 @@ func (h *CategoriaHandler) GetCategories(c *gin.Context) {
 }
 
 func (h *CategoriaHandler) GetCategoriesData(c *gin.Context) {
+
+	var finanzaId uint
 
 	idCategoria, httpCode, jsonResponse := services.ParseUint(c)
 	if idCategoria == nil {
@@ -51,7 +67,19 @@ func (h *CategoriaHandler) GetCategoriesData(c *gin.Context) {
 		return
 	}
 
-	datosFiltro, err := h.CategoriaRepo.GetCategoriesData(userClaims.FinanzaId, idCategoria)
+	id, err := services.GetFinanceId(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "El formato del query es incorrecto"})
+		return
+	}
+
+	finanzaId = userClaims.FinanzaId
+
+	if id != 0 {
+		finanzaId = id
+	}
+
+	datosFiltro, err := h.CategoriaRepo.GetCategoriesData(finanzaId, idCategoria)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Ocurrio un error al conseguir los datos de la categoria"})
 		return
@@ -66,6 +94,7 @@ type CategoriaRequest struct {
 
 func (h *CategoriaHandler) CreateCategoria(c *gin.Context) {
 
+	var finanzaId uint
 	var categoriaRequest CategoriaRequest
 	var categoria models.CategoriaEgreso
 
@@ -86,8 +115,20 @@ func (h *CategoriaHandler) CreateCategoria(c *gin.Context) {
 		return
 	}
 
+	id, err := services.GetFinanceId(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "El formato del query es incorrecto"})
+		return
+	}
+
+	finanzaId = userClaims.FinanzaId
+
+	if id != 0 {
+		finanzaId = id
+	}
+
 	categoria.NombreCategoria = categoriaRequest.NombreCategoria
-	categoria.FinanzasID = userClaims.FinanzaId
+	categoria.FinanzasID = finanzaId
 	categoria.UserID = userClaims.UserId
 
 	if err := h.CategoriaRepo.CreateCategory(&categoria); err != nil {
@@ -141,13 +182,27 @@ func (h *CategoriaHandler) UpdateCategoria(c *gin.Context) {
 
 func (h *CategoriaHandler) GetCategoriesList(c *gin.Context) {
 
+	var finanzaId uint
+
 	userClaims, httpCode, jsonResponse := services.GetClaims(c)
 	if userClaims == nil {
 		c.JSON(httpCode, jsonResponse)
 		return
 	}
 
-	listaCategorias, err := h.CategoriaRepo.GetCategoriesList(userClaims.FinanzaId)
+	id, err := services.GetFinanceId(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "El formato del query es incorrecto"})
+		return
+	}
+
+	finanzaId = userClaims.FinanzaId
+
+	if id != 0 {
+		finanzaId = id
+	}
+
+	listaCategorias, err := h.CategoriaRepo.GetCategoriesList(finanzaId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Ocurrio un error al conseguir las categorias de la finanza"})
 		return

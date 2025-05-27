@@ -143,3 +143,15 @@ func (r *TransaccionRepository) CreateOrUpdateSaving(finanzasId uint, monto floa
 
 	return r.DB.Save(&ahorro).Error
 }
+
+func (r *TransaccionRepository) GetSavingSubCategorie(finanzaId uint) (uint, error) {
+	var subCategoriaId uint
+
+	err := r.DB.Model(models.SubCategoriaEgreso{}).Where("finanzas_id = ? AND nombre_sub_categoria = ?", finanzaId, "Ahorro").
+		Select("id").Scan(&subCategoriaId).Error
+	if err != nil {
+		return 0, err
+	}
+
+	return subCategoriaId, nil
+}

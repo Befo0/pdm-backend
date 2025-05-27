@@ -22,13 +22,27 @@ func NewSubCategoriaHandler(subCategoriaRepo *repositories.SubCategoriaRepositor
 
 func (h *SubCategoriaHandler) GetSubCategories(c *gin.Context) {
 
+	var finanzaId uint
+
 	userClaims, httpCode, jsonResponse := services.GetClaims(c)
 	if userClaims == nil {
 		c.JSON(httpCode, jsonResponse)
 		return
 	}
 
-	subCategorias, err := h.SubCategoriaRepo.GetSubCategories(userClaims.FinanzaId)
+	id, err := services.GetFinanceId(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "El formato del query es incorrecto"})
+		return
+	}
+
+	finanzaId = userClaims.FinanzaId
+
+	if id != 0 {
+		finanzaId = id
+	}
+
+	subCategorias, err := h.SubCategoriaRepo.GetSubCategories(finanzaId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Ocurrio un error al traer las opciones de subCategorias"})
 		return
@@ -83,13 +97,27 @@ func (h *SubCategoriaHandler) GetSubCategoriesExpensesType(c *gin.Context) {
 
 func (h *SubCategoriaHandler) GetSubCategoriesList(c *gin.Context) {
 
+	var finanzaId uint
+
 	userClaims, httpCode, jsonResponse := services.GetClaims(c)
 	if userClaims == nil {
 		c.JSON(httpCode, jsonResponse)
 		return
 	}
 
-	subCategoriasList, err := h.SubCategoriaRepo.GetSubCategoriesList(userClaims.FinanzaId)
+	id, err := services.GetFinanceId(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "El formato del query es incorrecto"})
+		return
+	}
+
+	finanzaId = userClaims.FinanzaId
+
+	if id != 0 {
+		finanzaId = id
+	}
+
+	subCategoriasList, err := h.SubCategoriaRepo.GetSubCategoriesList(finanzaId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Ocurrio un error al conseguir la lista de sub categorias"})
 		return
@@ -106,6 +134,7 @@ type SubCategoriaRequest struct {
 }
 
 func (h *SubCategoriaHandler) CreateSubCategoria(c *gin.Context) {
+	var finanzaId uint
 	var subCategoriaRequest SubCategoriaRequest
 	var subCategoria models.SubCategoriaEgreso
 
@@ -126,7 +155,19 @@ func (h *SubCategoriaHandler) CreateSubCategoria(c *gin.Context) {
 		return
 	}
 
-	subCategoria.FinanzasID = userClaims.FinanzaId
+	id, err := services.GetFinanceId(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "El formato del query es incorrecto"})
+		return
+	}
+
+	finanzaId = userClaims.FinanzaId
+
+	if id != 0 {
+		finanzaId = id
+	}
+
+	subCategoria.FinanzasID = finanzaId
 	subCategoria.UserID = userClaims.UserId
 	subCategoria.CategoriaEgresoID = subCategoriaRequest.CategoriaId
 	subCategoria.NombreSubCategoria = subCategoriaRequest.NombreSubCategoria

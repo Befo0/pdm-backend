@@ -100,3 +100,15 @@ func (r *FinanzaConjRepository) JoinUser(userId uint, codigo string) error {
 
 	return nil
 }
+
+type FinancesResponse struct {
+	FinanzaId     uint
+	FinanzaNombre string
+}
+
+func (r *FinanzaConjRepository) GetConjFinances(userId uint) {
+
+	var financeResponse FinancesResponse
+
+	err := r.DB.Model(models.FinanzasConjunto{}).Where("user_id = ?", userId)
+}

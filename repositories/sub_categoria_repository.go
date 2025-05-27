@@ -16,8 +16,9 @@ func NewSubCategoriaRepository(db *gorm.DB) *SubCategoriaRepository {
 }
 
 type SubCategoriasFinanzas struct {
-	SubCategoriaId     uint
-	SubCategoriaNombre string
+	SubCategoriaId          uint
+	SubCategoriaNombre      string
+	SubCategoriaPresupuesto float64
 }
 
 func (r *SubCategoriaRepository) GetSubCategories(finanzaId uint) ([]SubCategoriasFinanzas, error) {
@@ -25,7 +26,7 @@ func (r *SubCategoriaRepository) GetSubCategories(finanzaId uint) ([]SubCategori
 	var subCategorias []SubCategoriasFinanzas
 
 	err := r.DB.Model(models.SubCategoriaEgreso{}).Where("finanzas_id = ?", finanzaId).
-		Select("sub_categoria_egresos.id AS sub_categoria_id, sub_categoria_egresos.nombre_sub_categoria AS sub_categoria_nombre").
+		Select("sub_categoria_egresos.id AS sub_categoria_id, sub_categoria_egresos.nombre_sub_categoria AS sub_categoria_nombre, sub_categoria_egresos.presupuesto_mensual AS sub_categoria_presupuesto").
 		Scan(&subCategorias).Error
 
 	if err != nil {

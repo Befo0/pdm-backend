@@ -16,6 +16,7 @@ func FinanzaConjuntoRouter(r *gin.Engine) {
 	finanzaConj := r.Group("/finanza-conjunta")
 	finanzaConj.Use(middlewares.AuthMiddleware())
 	{
+		finanzaConh.GET("/lista", handler.GetConjFinances)
 		finanzaConj.POST("/crear", handler.CreateConjFinance)
 	}
 }

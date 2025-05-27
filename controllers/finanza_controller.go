@@ -4,8 +4,6 @@ import (
 	"net/http"
 	"pdm-backend/repositories"
 	"pdm-backend/services"
-	"strconv"
-	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -20,6 +18,7 @@ func NewFinanzaHandler(financeRepo *repositories.FinanzaRepository) *FinanzaHand
 
 func (h *FinanzaHandler) GetDashboardSummary(c *gin.Context) {
 
+	var finanzaId uint
 	var resumenFinanciero, resumenEgresos, resumenAhorro gin.H
 	errCh := make(chan error, 3)
 
@@ -29,26 +28,26 @@ func (h *FinanzaHandler) GetDashboardSummary(c *gin.Context) {
 		return
 	}
 
-	mesString := c.Query("mes")
-	anioString := c.Query("anio")
-
-	mes, err := strconv.Atoi(mesString)
-	if err != nil || mes < 1 || mes > 12 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Mes inválido"})
+	id, err := services.GetFinanceId(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "El formato del query es incorrecto"})
 		return
 	}
 
-	anio, err := strconv.Atoi(anioString)
-	if err != nil || anio < 1900 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Año inválido"})
-		return
+	finanzaId = userClaims.FinanzaId
+
+	if id != 0 {
+		finanzaId = id
 	}
 
-	inicioMes := time.Date(anio, time.Month(mes), 1, 0, 0, 0, 0, time.UTC)
-	finMes := inicioMes.AddDate(0, 1, 0)
+	inicioMes, finMes, httpCode, jsonResponse, ok := services.ParseMonthAndYear(c)
+	if !ok {
+		c.JSON(httpCode, jsonResponse)
+		return
+	}
 
 	go func() {
-		resumen, err := h.FinanceRepo.GetFinanceSummary(userClaims.FinanzaId, inicioMes, finMes)
+		resumen, err := h.FinanceRepo.GetFinanceSummary(finanzaId, inicioMes, finMes)
 		if err == nil {
 			resumenFinanciero = resumen
 		}
@@ -57,7 +56,7 @@ func (h *FinanzaHandler) GetDashboardSummary(c *gin.Context) {
 	}()
 
 	go func() {
-		resumen, err := h.FinanceRepo.GetEgresoSummary(userClaims.FinanzaId, inicioMes, finMes)
+		resumen, err := h.FinanceRepo.GetEgresoSummary(finanzaId, inicioMes, finMes)
 		if err == nil {
 			resumenEgresos = resumen
 		}
@@ -65,7 +64,7 @@ func (h *FinanzaHandler) GetDashboardSummary(c *gin.Context) {
 	}()
 
 	go func() {
-		resumen, err := h.FinanceRepo.GetSavingsSummary(userClaims.FinanzaId, mes, anio)
+		resumen, err := h.FinanceRepo.GetSavingsSummary(finanzaId, int(inicioMes.Month()), inicioMes.Year())
 		if err == nil {
 			resumenAhorro = resumen
 		}
@@ -91,10 +90,24 @@ func (h *FinanzaHandler) GetDashboardSummary(c *gin.Context) {
 
 func (h *FinanzaHandler) GetDashboardData(c *gin.Context) {
 
+	var finanzaId uint
+
 	userClaims, httpCode, jsonResponse := services.GetClaims(c)
 	if userClaims == nil {
 		c.JSON(httpCode, jsonResponse)
 		return
+	}
+
+	id, err := services.GetFinanceId(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "El formato del query es incorrecto"})
+		return
+	}
+
+	finanzaId = userClaims.FinanzaId
+
+	if id != 0 {
+		finanzaId = id
 	}
 
 	inicioMes, finMes, httpCode, jsonResponse, ok := services.ParseMonthAndYear(c)
@@ -103,7 +116,7 @@ func (h *FinanzaHandler) GetDashboardData(c *gin.Context) {
 		return
 	}
 
-	resultado, err := h.FinanceRepo.GetDataSummary(inicioMes, finMes, userClaims.FinanzaId)
+	resultado, err := h.FinanceRepo.GetDataSummary(inicioMes, finMes, finanzaId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Ocurrio un error al conseguir los datos del dashboard"})
 		return

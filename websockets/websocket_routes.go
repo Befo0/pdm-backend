@@ -1,0 +1,21 @@
+package websockets
+
+import (
+	"pdm-backend/middlewares"
+
+	"github.com/gin-gonic/gin"
+)
+
+func WebSocketRouter(r *gin.Engine) {
+
+	webSocket := r.Group("/ws")
+	webSocket.Use(middlewares.AuthMiddleware())
+	{
+
+		go handleBroadCast()
+
+		webSocket.GET("/finanza/:id", func(c *gin.Context) {
+			handleConnection(c)
+		})
+	}
+}

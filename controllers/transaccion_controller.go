@@ -21,10 +21,25 @@ func NewTransaccionHandler(transaccionRepo *repositories.TransaccionRepository) 
 }
 
 func (h *TransaccionHandler) GetTransactions(c *gin.Context) {
+
+	var finanzaId uint
+
 	userClaims, httpCode, jsonResponse := services.GetClaims(c)
 	if userClaims == nil {
 		c.JSON(httpCode, jsonResponse)
 		return
+	}
+
+	id, err := services.GetFinanceId(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "El formato del query es incorrecto"})
+		return
+	}
+
+	finanzaId = userClaims.FinanzaId
+
+	if id != 0 {
+		finanzaId = id
 	}
 
 	inicioMes, finMes, httpCode, jsonResponse, ok := services.ParseMonthAndYear(c)
@@ -33,7 +48,7 @@ func (h *TransaccionHandler) GetTransactions(c *gin.Context) {
 		return
 	}
 
-	transacciones, err := h.TransaccionRepo.GetTransactions(inicioMes, finMes, userClaims.FinanzaId)
+	transacciones, err := h.TransaccionRepo.GetTransactions(inicioMes, finMes, finanzaId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Hubo un error al conseguir las transacciones"})
 		return
@@ -81,6 +96,8 @@ type TransactionRequest struct {
 
 func (h *TransaccionHandler) CreateTransaction(c *gin.Context) {
 
+	var finanzaId uint
+	var ahorroId uint
 	var transaccionRequest TransactionRequest
 	var transaccion models.Transacciones
 
@@ -98,7 +115,25 @@ func (h *TransaccionHandler) CreateTransaction(c *gin.Context) {
 		return
 	}
 
-	transaccion.FinanzasID = userClaims.FinanzaId
+	id, err := services.GetFinanceId(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "El formato del query es incorrecto"})
+		return
+	}
+
+	finanzaId = userClaims.FinanzaId
+	ahorroId = userClaims.AhorroId
+
+	if id != 0 {
+		finanzaId = id
+		ahorroId, err = h.TransaccionRepo.GetSavingSubCategorie(finanzaId)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Ocurrio un error al conseguir el id de la subcategoria"})
+			return
+		}
+	}
+
+	transaccion.FinanzasID = finanzaId
 	transaccion.UserID = userClaims.UserId
 	transaccion.TipoRegistroID = transaccionRequest.TipoTransaccion
 	transaccion.Monto = transaccionRequest.Monto
@@ -169,8 +204,8 @@ func (h *TransaccionHandler) CreateTransaction(c *gin.Context) {
 		return
 	}
 
-	if transaccion.SubCategoriaEgresoID != nil && *transaccion.SubCategoriaEgresoID == userClaims.AhorroId {
-		if err := h.TransaccionRepo.CreateOrUpdateSaving(userClaims.FinanzaId, transaccion.Monto, transaccion.FechaRegistro); err != nil {
+	if transaccion.SubCategoriaEgresoID != nil && *transaccion.SubCategoriaEgresoID == ahorroId {
+		if err := h.TransaccionRepo.CreateOrUpdateSaving(finanzaId, transaccion.Monto, transaccion.FechaRegistro); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Ocurrio un error al registrar el ahorro mensual"})
 			return
 		}
