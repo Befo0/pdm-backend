@@ -13,7 +13,7 @@ func WebSocketRouter(r *gin.Engine) {
 	{
 
 		webSocket.GET("/finanza/:id", func(c *gin.Context) {
-			handleConnection(c)
+			HandleConnection(c)
 		})
 	}
 }

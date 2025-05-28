@@ -167,62 +167,91 @@ type BroadCastMessage struct {
 	EventInfo []PayloadEvent `json:"event_info"`
 }
 
-func (r *TransaccionRepository) BuildWebSocketEvent(finanzaId uint, fecha time.Time) (*BroadCastMessage, error) {
+func (r *TransaccionRepository) BuildWebSocketEvent(finanzaId uint, fecha time.Time, transactionSubCategorieId *uint, savingSubCategorieId uint) (*BroadCastMessage, error) {
+
+	type result[T any] struct {
+		data T
+		err  error
+	}
 
 	var eventInfo []PayloadEvent
-	var finanzaRepo *FinanzaRepository
-	errCh := make(chan error, 4)
 
 	inicioMes := time.Date(fecha.Year(), fecha.Month(), 1, 0, 0, 0, 0, time.UTC)
 	finMes := inicioMes.AddDate(0, 1, 0)
 
-	var finanzaPrincipal gin.H
-	var finanzaDatos []DashboardData
-	var transacciones []ListaTransacciones
+	var finanzaRepo *FinanzaRepository
+	var ahorroRepo *AhorroRepository
+
+	chResumen := make(chan result[gin.H])
+	chDatos := make(chan result[[]DashboardData])
+	chTransacciones := make(chan result[[]ListaTransacciones])
+	chAhorro := make(chan result[[]AhorroResponse])
 
 	go func() {
 		resumen, err := finanzaRepo.GetDashboardSummary(finanzaId, inicioMes, finMes)
-		finanzaPrincipal = resumen
-
-		errCh <- err
+		chResumen <- result[gin.H]{resumen, err}
 	}()
 
 	go func() {
-		resumen, err := finanzaRepo.GetDataSummary(inicioMes, finMes, finanzaId)
-		finanzaDatos = resumen
-		errCh <- err
+		datos, err := finanzaRepo.GetDataSummary(inicioMes, finMes, finanzaId)
+		chDatos <- result[[]DashboardData]{datos, err}
 	}()
 
 	go func() {
 		lista, err := r.GetTransactions(inicioMes, finMes, finanzaId)
-		transacciones = lista
-		errCh <- err
+		chTransacciones <- result[[]ListaTransacciones]{lista, err}
 	}()
 
-	for i := 0; i < 4; i++ {
-		if err := <-errCh; err != nil {
-			return nil, err
-		}
+	if transactionSubCategorieId != nil && *transactionSubCategorieId == savingSubCategorieId {
+		go func() {
+			ahorro, err := ahorroRepo.GetSavingsData(finanzaId, fecha.Year())
+			chAhorro <- result[[]AhorroResponse]{ahorro, err}
+		}()
+	} else {
+		go func() {
+			chAhorro <- result[[]AhorroResponse]{nil, nil}
+		}()
 	}
 
-	nuevoResumen := PayloadEvent{
+	resumenRes := <-chResumen
+	if resumenRes.err != nil {
+		return nil, resumenRes.err
+	}
+
+	datosRes := <-chDatos
+	if datosRes.err != nil {
+		return nil, datosRes.err
+	}
+
+	transaccionesRes := <-chTransacciones
+	if transaccionesRes.err != nil {
+		return nil, transaccionesRes.err
+	}
+
+	ahorroRes := <-chAhorro
+	if ahorroRes.err != nil {
+		return nil, ahorroRes.err
+	}
+
+	eventInfo = append(eventInfo, PayloadEvent{
 		Event:   "resumen_finanza",
-		Payload: finanzaPrincipal,
-	}
+		Payload: resumenRes.data,
+	})
 
-	nuevaData := PayloadEvent{
+	eventInfo = append(eventInfo, PayloadEvent{
 		Event:   "datos_finanza",
-		Payload: finanzaDatos,
-	}
+		Payload: datosRes.data,
+	})
 
-	nuevaLista := PayloadEvent{
+	eventInfo = append(eventInfo, PayloadEvent{
 		Event:   "lista_transacciones",
-		Payload: transacciones,
-	}
+		Payload: transaccionesRes.data,
+	})
 
-	eventInfo = append(eventInfo, nuevoResumen)
-	eventInfo = append(eventInfo, nuevaData)
-	eventInfo = append(eventInfo, nuevaLista)
+	eventInfo = append(eventInfo, PayloadEvent{
+		Event:   "ahorro_finanza",
+		Payload: ahorroRes.data,
+	})
 
 	webSocketEvent := BroadCastMessage{
 		FinanzaId: finanzaId,

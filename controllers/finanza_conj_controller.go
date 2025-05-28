@@ -97,4 +97,13 @@ func (h *FinanzaConjHandler) GetConjFinances(c *gin.Context) {
 	}
 
 	finanzasConjuntas, err := h.FinanceConjRepo.GetConjFinances(userClaims.UserId)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Ocurrio un error al traer las finanzas"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"success": true, "finanzas": finanzasConjuntas})
+}
+
+func (h *FinanzaConjHandler) DeleteUserFromFinance(c *gin.Context) {
 }

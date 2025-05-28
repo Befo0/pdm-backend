@@ -104,11 +104,22 @@ func (r *FinanzaConjRepository) JoinUser(userId uint, codigo string) error {
 type FinancesResponse struct {
 	FinanzaId     uint
 	FinanzaNombre string
+	NombreAdmin   string
 }
 
-func (r *FinanzaConjRepository) GetConjFinances(userId uint) {
+func (r *FinanzaConjRepository) GetConjFinances(userId uint) ([]FinancesResponse, error) {
 
-	var financeResponse FinancesResponse
+	var financeResponse []FinancesResponse
 
-	err := r.DB.Model(models.FinanzasConjunto{}).Where("user_id = ?", userId)
+	err := r.DB.Model(models.FinanzasConjunto{}).Where("user_id = ?", userId).
+		Select("finanzas.id AS finanza_id, finanzas.titulo AS finanza_nombre, users.nombre AS nombre_admin").
+		Joins("INNER JOIN finanzas ON finanzas.id = finanzas_conjuntos.finanzas_id").
+		Joins("LEFT JOIN finanzas_conjuntos ON finanzas_conjuntos.finanzas_id = finanzas.id AND finanzas_conjuntos.roles_id = 1").
+		Joins("LEFT JOIN users ON users.id = finanzas_conjuntos.user_id").
+		Scan(&financeResponse).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return financeResponse, nil
 }
