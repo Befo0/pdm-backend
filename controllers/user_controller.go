@@ -74,7 +74,7 @@ func (h *Handler) Login(c *gin.Context) {
 
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			c.JSON(http.StatusOK, gin.H{"success": false, "errors": gin.H{"email": "No hay cuenta asociada a este correo electronico"}})
+			c.JSON(http.StatusConflict, gin.H{"success": false, "errors": gin.H{"email": "No hay cuenta asociada a este correo electronico"}})
 			return
 		}
 		c.JSON(http.StatusInternalServerError, gin.H{"sucess": false, "message": "Error en el servidor"})
@@ -84,7 +84,7 @@ func (h *Handler) Login(c *gin.Context) {
 	password := user.Contrasena
 
 	if err := bcrypt.CompareHashAndPassword([]byte(password), []byte(userRequest.Password)); err != nil {
-		c.JSON(http.StatusOK, gin.H{"success": false, "message": "La contraseña proporcionada es incorrecta"})
+		c.JSON(http.StatusConflict, gin.H{"success": false, "message": "La contraseña proporcionada es incorrecta"})
 		return
 	}
 

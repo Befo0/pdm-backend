@@ -14,5 +14,6 @@ type FinanzasConjunto struct {
 	User       User               `gorm:"foreignKey:UserID"`
 	RolesID    uint               `json:"rol_id" gorm:"not null"`
 	Rol        RolFinanzaConjunto `gorm:"foreignKey:RolesID" json:"rol"`
+	Activo     bool               `gorm:"not null" json:"activo"`
 	FechaUnion time.Time          `json:"fecha_union" gorm:"not null"`
 }
