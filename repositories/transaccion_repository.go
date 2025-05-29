@@ -3,6 +3,7 @@ package repositories
 import (
 	"errors"
 	"pdm-backend/models"
+	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -174,7 +175,14 @@ func (r *TransaccionRepository) BuildWebSocketEvent(finanzaId uint, fecha time.T
 		err  error
 	}
 
-	var eventInfo []PayloadEvent
+	var (
+		eventInfo       []PayloadEvent
+		wg              sync.WaitGroup
+		chResumen       = make(chan result[gin.H])
+		chDatos         = make(chan result[[]DashboardData])
+		chTransacciones = make(chan result[[]ListaTransacciones])
+		chAhorro        = make(chan result[[]AhorroResponse])
+	)
 
 	inicioMes := time.Date(fecha.Year(), fecha.Month(), 1, 0, 0, 0, 0, time.UTC)
 	finMes := inicioMes.AddDate(0, 1, 0)
@@ -182,36 +190,45 @@ func (r *TransaccionRepository) BuildWebSocketEvent(finanzaId uint, fecha time.T
 	var finanzaRepo *FinanzaRepository
 	var ahorroRepo *AhorroRepository
 
-	chResumen := make(chan result[gin.H])
-	chDatos := make(chan result[[]DashboardData])
-	chTransacciones := make(chan result[[]ListaTransacciones])
-	chAhorro := make(chan result[[]AhorroResponse])
-
+	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		resumen, err := finanzaRepo.GetDashboardSummary(finanzaId, inicioMes, finMes)
 		chResumen <- result[gin.H]{resumen, err}
 	}()
 
+	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		datos, err := finanzaRepo.GetDataSummary(inicioMes, finMes, finanzaId)
 		chDatos <- result[[]DashboardData]{datos, err}
 	}()
 
+	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		lista, err := r.GetTransactions(inicioMes, finMes, finanzaId)
 		chTransacciones <- result[[]ListaTransacciones]{lista, err}
 	}()
 
-	if transactionSubCategorieId != nil && *transactionSubCategorieId == savingSubCategorieId {
-		go func() {
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		if transactionSubCategorieId != nil && *transactionSubCategorieId == savingSubCategorieId {
 			ahorro, err := ahorroRepo.GetSavingsData(finanzaId, fecha.Year())
 			chAhorro <- result[[]AhorroResponse]{ahorro, err}
-		}()
-	} else {
-		go func() {
+		} else {
 			chAhorro <- result[[]AhorroResponse]{nil, nil}
-		}()
-	}
+		}
+	}()
+
+	go func() {
+		wg.Wait()
+		close(chResumen)
+		close(chDatos)
+		close(chTransacciones)
+		close(chAhorro)
+	}()
 
 	resumenRes := <-chResumen
 	if resumenRes.err != nil {
@@ -233,25 +250,10 @@ func (r *TransaccionRepository) BuildWebSocketEvent(finanzaId uint, fecha time.T
 		return nil, ahorroRes.err
 	}
 
-	eventInfo = append(eventInfo, PayloadEvent{
-		Event:   "resumen_finanza",
-		Payload: resumenRes.data,
-	})
-
-	eventInfo = append(eventInfo, PayloadEvent{
-		Event:   "datos_finanza",
-		Payload: datosRes.data,
-	})
-
-	eventInfo = append(eventInfo, PayloadEvent{
-		Event:   "lista_transacciones",
-		Payload: transaccionesRes.data,
-	})
-
-	eventInfo = append(eventInfo, PayloadEvent{
-		Event:   "ahorro_finanza",
-		Payload: ahorroRes.data,
-	})
+	eventInfo = append(eventInfo, PayloadEvent{Event: "resumen_finanza", Payload: resumenRes.data})
+	eventInfo = append(eventInfo, PayloadEvent{Event: "datos_finanza", Payload: datosRes.data})
+	eventInfo = append(eventInfo, PayloadEvent{Event: "lista_transacciones", Payload: transaccionesRes.data})
+	eventInfo = append(eventInfo, PayloadEvent{Event: "ahorro_finanza", Payload: ahorroRes.data})
 
 	webSocketEvent := BroadCastMessage{
 		FinanzaId: finanzaId,
