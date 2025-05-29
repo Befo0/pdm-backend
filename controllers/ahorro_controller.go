@@ -19,6 +19,7 @@ func NewAhorroHandler(ahorroRepo *repositories.AhorroRepository) *AhorroHandler 
 
 func (h *AhorroHandler) GetSavingsData(c *gin.Context) {
 
+	var finanzaId uint
 	anioString := c.Query("anio")
 
 	anio, err := strconv.Atoi(anioString)
@@ -33,7 +34,19 @@ func (h *AhorroHandler) GetSavingsData(c *gin.Context) {
 		return
 	}
 
-	ahorroData, err := h.AhorroRepo.GetSavingsData(userClaims.FinanzaId, anio)
+	id, err := services.GetFinanceId(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "El formato del query es incorrecto"})
+		return
+	}
+
+	finanzaId = userClaims.FinanzaId
+
+	if id != 0 {
+		finanzaId = id
+	}
+
+	ahorroData, err := h.AhorroRepo.GetSavingsData(finanzaId, anio)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Ocurrio un error al conseguir los datos"})
 		return
@@ -50,6 +63,7 @@ type SavingRequest struct {
 
 func (h *AhorroHandler) CreateSavingGoal(c *gin.Context) {
 
+	var finanzaId uint
 	var ahorroRequest SavingRequest
 
 	if err := c.ShouldBindJSON(&ahorroRequest); err != nil {
@@ -63,7 +77,19 @@ func (h *AhorroHandler) CreateSavingGoal(c *gin.Context) {
 		return
 	}
 
-	if err := h.AhorroRepo.CreateOrUpdateSavingGoal(userClaims.FinanzaId, ahorroRequest.Monto, ahorroRequest.Mes, ahorroRequest.Anio); err != nil {
+	id, err := services.GetFinanceId(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "El formato del query es incorrecto"})
+		return
+	}
+
+	finanzaId = userClaims.FinanzaId
+
+	if id != 0 {
+		finanzaId = id
+	}
+
+	if err := h.AhorroRepo.CreateOrUpdateSavingGoal(finanzaId, ahorroRequest.Monto, ahorroRequest.Mes, ahorroRequest.Anio); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Hubo un error al crear o actualizar la meta mensual"})
 		return
 	}

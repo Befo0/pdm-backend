@@ -88,3 +88,95 @@ func (h *FinanzaConjHandler) JoinUser(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"success": true, "message": "El usuario se ha unido con exito"})
 }
+
+func (h *FinanzaConjHandler) GetConjFinances(c *gin.Context) {
+
+	userClaims, httpCode, jsonResponse := services.GetClaims(c)
+	if userClaims == nil {
+		c.JSON(httpCode, jsonResponse)
+		return
+	}
+
+	finanzasConjuntas, err := h.FinanceConjRepo.GetConjFinances(userClaims.UserId)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Ocurrio un error al traer las finanzas"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"success": true, "finanzas": finanzasConjuntas})
+}
+
+func (h *FinanzaConjHandler) GetConjFinancesDetails(c *gin.Context) {
+
+	userClaims, httpCode, jsonResponse := services.GetClaims(c)
+	if userClaims == nil {
+		c.JSON(httpCode, jsonResponse)
+		return
+	}
+
+	finanzaId, err := services.GetFinanceId(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "El formato del query es incorrecto"})
+		return
+	}
+
+	financeDetails, err := h.FinanceConjRepo.GetConjFinancesDetails(finanzaId)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Ocurrio un error al conseguir los detalles de la finanza"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"success": true, "detalles_finanza": financeDetails})
+}
+
+func (h *FinanzaConjHandler) DeleteUserFromFinance(c *gin.Context) {
+
+	userId, httpCode, jsonResponse := services.ParseUint(c)
+	if userId == nil {
+		c.JSON(httpCode, jsonResponse)
+		return
+	}
+
+	userClaims, httpCode, jsonResponse := services.GetClaims(c)
+	if userClaims == nil {
+		c.JSON(httpCode, jsonResponse)
+		return
+	}
+
+	finanzaId, err := services.GetFinanceId(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "El formato del query es incorrecto"})
+		return
+	}
+
+	err = h.FinanceConjRepo.LeaveConjFinance(*userId, finanzaId)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Ocurrio un error al eliminar el usuario"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"success": true, "message": "El usuario ha sido eliminado correctamente"})
+}
+
+func (h *FinanzaConjHandler) LeaveConjFinance(c *gin.Context) {
+
+	userClaims, httpCode, jsonResponse := services.GetClaims(c)
+	if userClaims == nil {
+		c.JSON(httpCode, jsonResponse)
+		return
+	}
+
+	finanzaId, err := services.GetFinanceId(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "El formato del query es incorrecto"})
+		return
+	}
+
+	err = h.FinanceConjRepo.LeaveConjFinance(userClaims.UserId, finanzaId)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Ocurrio un error al eliminar el usuario"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"success": true, "message": "El usuario ha sido eliminado correctamente"})
+}

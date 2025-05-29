@@ -6,6 +6,7 @@ import (
 	"pdm-backend/models"
 	"pdm-backend/repositories"
 	"pdm-backend/services"
+	"pdm-backend/websockets"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -21,10 +22,25 @@ func NewTransaccionHandler(transaccionRepo *repositories.TransaccionRepository) 
 }
 
 func (h *TransaccionHandler) GetTransactions(c *gin.Context) {
+
+	var finanzaId uint
+
 	userClaims, httpCode, jsonResponse := services.GetClaims(c)
 	if userClaims == nil {
 		c.JSON(httpCode, jsonResponse)
 		return
+	}
+
+	id, err := services.GetFinanceId(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "El formato del query es incorrecto"})
+		return
+	}
+
+	finanzaId = userClaims.FinanzaId
+
+	if id != 0 {
+		finanzaId = id
 	}
 
 	inicioMes, finMes, httpCode, jsonResponse, ok := services.ParseMonthAndYear(c)
@@ -33,7 +49,7 @@ func (h *TransaccionHandler) GetTransactions(c *gin.Context) {
 		return
 	}
 
-	transacciones, err := h.TransaccionRepo.GetTransactions(inicioMes, finMes, userClaims.FinanzaId)
+	transacciones, err := h.TransaccionRepo.GetTransactions(inicioMes, finMes, finanzaId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Hubo un error al conseguir las transacciones"})
 		return
@@ -81,6 +97,8 @@ type TransactionRequest struct {
 
 func (h *TransaccionHandler) CreateTransaction(c *gin.Context) {
 
+	var finanzaId uint
+	var ahorroId uint
 	var transaccionRequest TransactionRequest
 	var transaccion models.Transacciones
 
@@ -98,7 +116,25 @@ func (h *TransaccionHandler) CreateTransaction(c *gin.Context) {
 		return
 	}
 
-	transaccion.FinanzasID = userClaims.FinanzaId
+	id, err := services.GetFinanceId(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "El formato del query es incorrecto"})
+		return
+	}
+
+	finanzaId = userClaims.FinanzaId
+	ahorroId = userClaims.AhorroId
+
+	if id != 0 {
+		finanzaId = id
+		ahorroId, err = h.TransaccionRepo.GetSavingSubCategorie(finanzaId)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Ocurrio un error al conseguir el id de la subcategoria"})
+			return
+		}
+	}
+
+	transaccion.FinanzasID = finanzaId
 	transaccion.UserID = userClaims.UserId
 	transaccion.TipoRegistroID = transaccionRequest.TipoTransaccion
 	transaccion.Monto = transaccionRequest.Monto
@@ -129,14 +165,14 @@ func (h *TransaccionHandler) CreateTransaction(c *gin.Context) {
 
 		if fechaAño == nowAño && fechaMes == nowMes {
 			// ✅ mes actual
-		} else if fechaAño == nowAño && int(fechaMes) == int(nowMes)-1 {
+			//} else if fechaAño == nowAño && int(fechaMes) == int(nowMes)-1 {
 			// ✅ mes anterior
-		} else if fechaAño == nowAño-1 && nowMes == 1 && fechaMes == 12 {
+			//} else if fechaaño == nowaño-1 && nowmes == 1 && fechames == 12 {
 			// ✅ caso especial: estamos en enero y permite diciembre del año anterior
 		} else {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"success": false,
-				"message": "Solo puedes registrar movimientos del mes actual o anterior",
+				"message": "Solo puedes registrar movimientos del mes actual",
 			})
 			return
 		}
@@ -169,12 +205,20 @@ func (h *TransaccionHandler) CreateTransaction(c *gin.Context) {
 		return
 	}
 
-	if transaccion.SubCategoriaEgresoID != nil && *transaccion.SubCategoriaEgresoID == userClaims.AhorroId {
-		if err := h.TransaccionRepo.CreateOrUpdateSaving(userClaims.FinanzaId, transaccion.Monto, transaccion.FechaRegistro); err != nil {
+	if transaccion.SubCategoriaEgresoID != nil && *transaccion.SubCategoriaEgresoID == ahorroId {
+		if err := h.TransaccionRepo.CreateOrUpdateSaving(finanzaId, transaccion.Monto, transaccion.FechaRegistro); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Ocurrio un error al registrar el ahorro mensual"})
 			return
 		}
 	}
+
+	webSocketEvent, err := h.TransaccionRepo.BuildWebSocketEvent(finanzaId, transaccion.FechaRegistro, transaccion.SubCategoriaEgresoID, ahorroId)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Ocurrio un error al crear el evento websocket"})
+		return
+	}
+
+	websockets.MensajeBroadcast <- *webSocketEvent
 
 	c.JSON(http.StatusCreated, gin.H{"success": true, "message": "La transaccion fue creada correctamente"})
 }

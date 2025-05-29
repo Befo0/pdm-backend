@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 	"pdm-backend/routes"
+	"pdm-backend/websockets"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -26,6 +27,8 @@ func main() {
 		AllowCredentials: true,
 	}))
 
+	go websockets.HandleBroadCast()
+
 	routes.UserRouter(r)
 	routes.FinanzaRouter(r)
 	routes.CategoriaRouter(r)
@@ -33,6 +36,8 @@ func main() {
 	routes.SubCategoriaRouter(r)
 	routes.IngresosRouter(r)
 	routes.AhorroRouter(r)
+	routes.FinanzaConjuntoRouter(r)
+	websockets.WebSocketRouter(r)
 
 	PORT := os.Getenv("PORT")
 	r.Run(PORT)

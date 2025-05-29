@@ -54,6 +54,7 @@ func (r *FinanzaConjRepository) CreateConjFinance(userId uint, titulo, descripci
 			FinanzasID: finanza.ID,
 			UserID:     userId,
 			RolesID:    1,
+			Activo:     true,
 			FechaUnion: time.Now(),
 		}
 		if err := tx.Create(&finanzaConj).Error; err != nil {
@@ -86,6 +87,7 @@ func (r *FinanzaConjRepository) JoinUser(userId uint, codigo string) error {
 			FinanzasID: invitacion.FinanzaID,
 			UserID:     userId,
 			RolesID:    2,
+			Activo:     true,
 			FechaUnion: time.Now(),
 		}
 
@@ -99,4 +101,79 @@ func (r *FinanzaConjRepository) JoinUser(userId uint, codigo string) error {
 	}
 
 	return nil
+}
+
+type FinancesResponse struct {
+	FinanzaId     uint
+	FinanzaNombre string
+	NombreAdmin   string
+}
+
+func (r *FinanzaConjRepository) GetConjFinances(userId uint) ([]FinancesResponse, error) {
+
+	var financeResponse []FinancesResponse
+
+	err := r.DB.Model(models.FinanzasConjunto{}).Where("user_id = ?", userId).
+		Select("finanzas.id AS finanza_id, finanzas.titulo AS finanza_nombre, users.nombre AS nombre_admin").
+		Joins("INNER JOIN finanzas ON finanzas.id = finanzas_conjuntos.finanzas_id").
+		Joins("LEFT JOIN finanzas_conjuntos ON finanzas_conjuntos.finanzas_id = finanzas.id AND finanzas_conjuntos.roles_id = 1").
+		Joins("LEFT JOIN users ON users.id = finanzas_conjuntos.user_id").
+		Scan(&financeResponse).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return financeResponse, nil
+}
+
+type MiembrosFinanza struct {
+	IdUsuario     uint
+	NombreUsuario string
+	RolUsuario    uint
+}
+
+type ConjFinancesDetails struct {
+	FinanzaTitulo      string
+	FinanzaDescripcion string
+	Miembros           []MiembrosFinanza
+}
+
+func (r *FinanzaConjRepository) GetConjFinancesDetails(finanzaId uint) (*ConjFinancesDetails, error) {
+	var detallesFinanza ConjFinancesDetails
+	var miembros []MiembrosFinanza
+
+	err := r.DB.Model(models.Finanzas{}).
+		Select("finanzas.titulo AS finanza_titulo, finanzas.descripcion AS finanza_descripcion").
+		Where("finanzas.id = ?", finanzaId).
+		Scan(&detallesFinanza).Error
+	if err != nil {
+		return nil, err
+	}
+
+	err = r.DB.Model(models.FinanzasConjunto{}).
+		Select("finanzas_conjuntos.user_id AS id_usuario, users.nombre AS nombre_usuario, finanzas_conjuntos.roles_id AS rol_usuario").
+		Joins("JOIN users ON users.id = finanzas_conjuntos.user_id").
+		Where("finanzas_conjuntos.finanzas_id = ?", finanzaId).
+		Scan(&miembros).Error
+	if err != nil {
+		return nil, err
+	}
+
+	detallesFinanza.Miembros = miembros
+	return &detallesFinanza, nil
+}
+
+func (r *FinanzaConjRepository) LeaveConjFinance(userId, finanzaId uint) error {
+
+	var finanzaConj models.FinanzasConjunto
+
+	err := r.DB.Model(models.FinanzasConjunto{}).Where("finanzas_id = ? AND user_id = ?", finanzaId, userId).
+		First(&finanzaConj).Error
+	if err != nil {
+		return err
+	}
+
+	finanzaConj.Activo = false
+
+	return r.DB.Save(&finanzaConj).Error
 }

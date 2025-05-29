@@ -16,6 +16,10 @@ func FinanzaConjuntoRouter(r *gin.Engine) {
 	finanzaConj := r.Group("/finanza-conjunta")
 	finanzaConj.Use(middlewares.AuthMiddleware())
 	{
+		finanzaConj.GET("/lista", handler.GetConjFinances)
+		finanzaConj.GET("/detalles", handler.GetConjFinancesDetails)
 		finanzaConj.POST("/crear", handler.CreateConjFinance)
+		finanzaConj.DELETE("/leave", handler.LeaveConjFinance)
+		finanzaConj.DELETE("/user/:id", handler.DeleteUserFromFinance)
 	}
 }
