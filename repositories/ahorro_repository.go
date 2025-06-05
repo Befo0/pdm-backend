@@ -95,7 +95,7 @@ func (r *AhorroRepository) CreateOrUpdateSavingGoal(finanzaId uint, monto float6
 		return err
 	}
 
-	ahorro.MontoMeta += monto
+	ahorro.MontoMeta = monto
 
 	return r.DB.Save(&ahorro).Error
 }

@@ -24,9 +24,22 @@ type SubCategoriasFinanzas struct {
 func (r *SubCategoriaRepository) GetSubCategories(finanzaId uint) ([]SubCategoriasFinanzas, error) {
 
 	var subCategorias []SubCategoriasFinanzas
+	fechaActual := time.Now()
+	mes := int(fechaActual.Month())
+	anio := fechaActual.Year()
 
 	err := r.DB.Model(models.SubCategoriaEgreso{}).Where("finanzas_id = ?", finanzaId).
-		Select("sub_categoria_egresos.id AS sub_categoria_id, sub_categoria_egresos.nombre_sub_categoria AS sub_categoria_nombre, sub_categoria_egresos.presupuesto_mensual AS sub_categoria_presupuesto").
+		Select(`
+		sub_categoria_egresos.id AS sub_categoria_id, 
+		sub_categoria_egresos.nombre_sub_categoria AS sub_categoria_nombre, 
+		CASE 
+			WHEN sub_categoria_egresos.nombre_sub_categoria = "Ahorro" THEN meta_mensuals.monto_meta
+			ELSE sub_categoria_egresos.presupuesto_mensual 
+		END AS sub_categoria_presupuesto
+		`).
+		Joins(`LEFT JOIN meta_mensuals ON meta_mensuals.finanzas_id = sub_categoria_egresos.finanzas_id
+		AND meta_mensuals.mes = ? AND meta_mensuals.anio = ?
+		`, mes, anio).
 		Scan(&subCategorias).Error
 
 	if err != nil {
