@@ -113,7 +113,7 @@ func (r *FinanzaConjRepository) GetConjFinances(userId uint) ([]FinancesResponse
 
 	var financeResponse []FinancesResponse
 
-	err := r.DB.Model(models.FinanzasConjunto{}).Where("user_id = ?", userId).
+	err := r.DB.Model(models.FinanzasConjunto{}).Where("user_id = ? AND activo = ?", userId, true).
 		Select("finanzas.id AS finanza_id, finanzas.titulo AS finanza_nombre, users.nombre AS nombre_admin").
 		Joins("INNER JOIN finanzas ON finanzas.id = finanzas_conjuntos.finanzas_id").
 		Joins("LEFT JOIN finanzas_conjuntos ON finanzas_conjuntos.finanzas_id = finanzas.id AND finanzas_conjuntos.roles_id = 1").
