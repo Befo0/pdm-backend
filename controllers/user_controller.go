@@ -133,7 +133,7 @@ func (h *Handler) UpdateProfile(c *gin.Context) {
 	}
 
 	user.Nombre = updateRequest.Name
-	user.Nombre = updateRequest.Email
+	user.Correo = updateRequest.Email
 
 	if err := h.UserRepo.UpdateUser(user); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Error al modificar datos"})
@@ -176,12 +176,12 @@ func (h *Handler) UpdatePassword(c *gin.Context) {
 	password := user.Contrasena
 
 	if err := bcrypt.CompareHashAndPassword([]byte(password), []byte(passwordRequest.ActualPassword)); err != nil {
-		c.JSON(http.StatusOK, gin.H{"success": false, "message": "La contraseña no coincide con la actual"})
+		c.JSON(http.StatusConflict, gin.H{"success": false, "message": "La contraseña no coincide con la actual"})
 		return
 	}
 
 	if passwordRequest.NewPassword != passwordRequest.ConfirmPassword {
-		c.JSON(http.StatusOK, gin.H{"success": false, "message": "La confirmación de tu contraseña no coincide con la nueva"})
+		c.JSON(http.StatusConflict, gin.H{"success": false, "message": "La confirmación de tu contraseña no coincide con la nueva"})
 		return
 	}
 

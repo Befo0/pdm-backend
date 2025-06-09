@@ -29,9 +29,9 @@ func (r *InvitacionRepository) CreateInvite(finanzaId *uint) error {
 		}
 
 		invitacion := models.Invitaciones{
-			FinanzaID: *finanzaId,
-			Codigo:    codigo,
-			ExpiraEn:  time.Now().Add(time.Minute * 15),
+			FinanzasID: *finanzaId,
+			Codigo:     codigo,
+			ExpiraEn:   time.Now().Add(time.Minute * 15),
 		}
 
 		err = r.DB.Create(&invitacion).Error

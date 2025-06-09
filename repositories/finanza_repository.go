@@ -184,11 +184,11 @@ func (r FinanzaRepository) GetDashboardSummary(finanzaId uint, inicioMes, finMes
 }
 
 type DashboardData struct {
-	CategoriaId      uint `json:"-"`
-	CategoriaNombre  string
-	TotalPresupuesto float64
-	Gasto            float64
-	Diferencia       float64
+	CategoriaId      uint    `json:"-"`
+	CategoriaNombre  string  `json:"categoria_nombre"`
+	TotalPresupuesto float64 `json:"total_presupuesto"`
+	Gasto            float64 `json:"gasto"`
+	Diferencia       float64 `json:"diferencia"`
 }
 
 func (r *FinanzaRepository) GetDataSummary(inicioMes, finMes time.Time, finanzaId uint) ([]DashboardData, error) {

@@ -20,37 +20,6 @@ func NewSubCategoriaHandler(subCategoriaRepo *repositories.SubCategoriaRepositor
 	return &SubCategoriaHandler{SubCategoriaRepo: subCategoriaRepo}
 }
 
-func (h *SubCategoriaHandler) GetSubCategories(c *gin.Context) {
-
-	var finanzaId uint
-
-	userClaims, httpCode, jsonResponse := services.GetClaims(c)
-	if userClaims == nil {
-		c.JSON(httpCode, jsonResponse)
-		return
-	}
-
-	id, err := services.GetFinanceId(c)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "El formato del query es incorrecto"})
-		return
-	}
-
-	finanzaId = userClaims.FinanzaId
-
-	if id != 0 {
-		finanzaId = id
-	}
-
-	subCategorias, err := h.SubCategoriaRepo.GetSubCategories(finanzaId)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Ocurrio un error al traer las opciones de subCategorias"})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"sub_categorias": subCategorias})
-}
-
 func (h *SubCategoriaHandler) GetSubCategoryById(c *gin.Context) {
 
 	idSubCategoria, httpCode, jsonResponse := services.ParseUint(c)

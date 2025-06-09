@@ -77,14 +77,14 @@ func (r *FinanzaConjRepository) JoinUser(userId uint, codigo string) error {
 	}
 
 	var existente models.FinanzasConjunto
-	err = r.DB.Where("finanzas_id = ? AND user_id = ?", invitacion.FinanzaID, userId).First(&existente).Error
+	err = r.DB.Where("finanzas_id = ? AND user_id = ?", invitacion.FinanzasID, userId).First(&existente).Error
 	if err == nil {
 		return errors.New("Ya perteneces a esta finanza conjunta")
 	}
 
 	if time.Now().Before(invitacion.ExpiraEn) {
 		finanzaConjunta := models.FinanzasConjunto{
-			FinanzasID: invitacion.FinanzaID,
+			FinanzasID: invitacion.FinanzasID,
 			UserID:     userId,
 			RolesID:    2,
 			Activo:     true,

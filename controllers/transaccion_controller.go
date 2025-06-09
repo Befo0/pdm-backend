@@ -58,6 +58,37 @@ func (h *TransaccionHandler) GetTransactions(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"success": true, "transacciones": transacciones})
 }
 
+func (h *TransaccionHandler) GetTransactionOptions(c *gin.Context) {
+
+	var finanzaId uint
+
+	userClaims, httpCode, jsonResponse := services.GetClaims(c)
+	if userClaims == nil {
+		c.JSON(httpCode, jsonResponse)
+		return
+	}
+
+	id, err := services.GetFinanceId(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "El formato del query es incorrecto"})
+		return
+	}
+
+	finanzaId = userClaims.FinanzaId
+
+	if id != 0 {
+		finanzaId = id
+	}
+
+	opcionTransacciones, err := h.TransaccionRepo.GetOptions(finanzaId)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Hubo un error al conseguir la transaccion"})
+		return
+	}
+
+	c.JSON(http.StatusOK, opcionTransacciones)
+}
+
 func (h *TransaccionHandler) GetTransactionById(c *gin.Context) {
 
 	idTransaccion, httpCode, jsonResponse := services.ParseUint(c)
@@ -88,8 +119,6 @@ func (h *TransaccionHandler) GetTransactionById(c *gin.Context) {
 type TransactionRequest struct {
 	TipoTransaccion uint       `json:"tipo_transaccion" binding:"required"`
 	TipoMovimiento  uint       `json:"tipo_movimiento" binding:"required"`
-	TipoCategoria   *uint      `json:"tipo_categoria,omitempty"`
-	TipoGasto       *uint      `json:"tipo_gasto,omitempty"`
 	Monto           float64    `json:"monto" binding:"required"`
 	Descripcion     string     `json:"descripcion"`
 	FechaRegistro   *time.Time `json:"fecha_registro" binding:"required"`
@@ -187,13 +216,14 @@ func (h *TransaccionHandler) CreateTransaction(c *gin.Context) {
 	case 2:
 		transaccion.SubCategoriaEgresoID = &transaccionRequest.TipoMovimiento
 
-		if transaccionRequest.TipoCategoria == nil || transaccionRequest.TipoGasto == nil {
-			c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "Faltan datos obligatorios"})
+		identificadores, err := h.TransaccionRepo.GetIds(*transaccion.SubCategoriaEgresoID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Ocurrio un error al conseguir los ids"})
 			return
 		}
 
-		transaccion.CategoriaEgresoID = transaccionRequest.TipoCategoria
-		transaccion.TipoPresupuestoID = transaccionRequest.TipoGasto
+		transaccion.CategoriaEgresoID = &identificadores.CategoriaId
+		transaccion.TipoPresupuestoID = &identificadores.GastoId
 
 	default:
 		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "Tipo de transaccion invalida"})
