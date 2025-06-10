@@ -195,7 +195,8 @@ func (r *FinanzaRepository) GetDataSummary(inicioMes, finMes time.Time, finanzaI
 
 	var resultados []DashboardData
 
-	err := r.DB.Model(models.CategoriaEgreso{}).Select("categoria_egresos.id AS categoria_id, categoria_egresos.nombre_categoria AS categoria_nombre, COALESCE(SUM(sub_categoria_egresos.presupuesto_mensual), 0) AS total_presupuesto").
+	err := r.DB.Model(models.CategoriaEgreso{}).Where("categoria_egresos.finanzas_id = ?", finanzaId).
+		Select("categoria_egresos.id AS categoria_id, categoria_egresos.nombre_categoria AS categoria_nombre, COALESCE(SUM(sub_categoria_egresos.presupuesto_mensual), 0) AS total_presupuesto").
 		Joins("LEFT JOIN sub_categoria_egresos ON sub_categoria_egresos.categoria_egreso_id = categoria_egresos.id").
 		Group("categoria_egresos.id, categoria_egresos.nombre_categoria").
 		Order("categoria_egresos.nombre_categoria").

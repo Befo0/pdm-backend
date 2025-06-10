@@ -19,13 +19,13 @@ func NewTransaccionRepository(db *gorm.DB) *TransaccionRepository {
 }
 
 type ListaTransacciones struct {
-	TransaccionId    uint
-	NombreCategoria  string
-	Monto            float64
-	TipoMovimientoId uint
-	TipoMovimiento   string
-	FechaTransaccion string
-	NombreUsuario    string
+	TransaccionId    uint    `json:"transaccion_id"`
+	NombreCategoria  string  `json:"nombre_categoria"`
+	Monto            float64 `json:"monto_transaccion"`
+	TipoMovimientoId uint    `json:"tipo_movimiento_id"`
+	TipoMovimiento   string  `json:"tipo_movimiento_nombre"`
+	FechaTransaccion string  `json:"fecha_transaccion"`
+	NombreUsuario    string  `json:"nombre_usuario"`
 }
 
 func (r *TransaccionRepository) GetTransactions(inicioMes, finMes time.Time, finanzaId uint) ([]ListaTransacciones, error) {
