@@ -55,7 +55,7 @@ func (r *AhorroRepository) GetSavingsData(finanzaId uint, anio int) ([]AhorroRes
 		return nil, err
 	}
 
-	var ahorroResponse []AhorroResponse
+	ahorroResponse := []AhorroResponse{}
 	for _, r := range resultados {
 		porcentaje := 0.0
 		if r.MontoAhorrado != 0 {

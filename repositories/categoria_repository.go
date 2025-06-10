@@ -15,8 +15,8 @@ func NewCategoriaRepository(db *gorm.DB) *CategoriaRepository {
 }
 
 type CategoriasFinanzas struct {
-	CategoriaId     uint
-	CategoriaNombre string
+	CategoriaId     uint   `json:"categoria_id"`
+	CategoriaNombre string `json:"categoria_nombre"`
 }
 
 func (r *CategoriaRepository) GetCategories(finanzaId uint) ([]CategoriasFinanzas, error) {
@@ -35,10 +35,10 @@ func (r *CategoriaRepository) GetCategories(finanzaId uint) ([]CategoriasFinanza
 }
 
 type SubCategorias struct {
-	Nombre      string
-	Presupuesto float64
-	Gasto       float64
-	Diferencia  float64
+	Nombre      string  `json:"nombre_sub_categoria"`
+	Presupuesto float64 `json:"presupuesto_sub_categoria"`
+	Gasto       float64 `json:"gasto_sub_categoria"`
+	Diferencia  float64 `json:"diferencia_sub_categoria"`
 }
 
 type CategoriaResumen struct {
@@ -47,10 +47,10 @@ type CategoriaResumen struct {
 }
 
 type JSONResponse struct {
-	Presupuesto   float64
-	Gasto         float64
-	Diferencia    float64
-	SubCategorias []SubCategorias
+	Presupuesto   float64         `json:"presupuesto_total"`
+	Gasto         float64         `json:"gasto_total"`
+	Diferencia    float64         `json:"diferencia_total"`
+	SubCategorias []SubCategorias `json:"sub_categorias"`
 }
 
 func (r *CategoriaRepository) GetCategoriesData(finanzaId uint, categoriaId *uint) (*JSONResponse, error) {

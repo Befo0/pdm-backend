@@ -17,33 +17,39 @@ func NewInvitacionRepository(db *gorm.DB) *InvitacionRepository {
 	return &InvitacionRepository{DB: db}
 }
 
-func (r *InvitacionRepository) CreateInvite(finanzaId *uint) error {
+type Invitacion struct {
+	Codigo string `json:"codigo_invitacion"`
+}
 
+func (r *InvitacionRepository) CreateInvite(finanzaId *uint) (*Invitacion, error) {
+
+	var invitacionRespuesta Invitacion
 	intentosMax := 5
 
 	for i := 0; i < intentosMax; i++ {
 
 		codigo, err := services.GenerateInvitacionCode(10)
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		invitacion := models.Invitaciones{
-			FinanzaID: *finanzaId,
-			Codigo:    codigo,
-			ExpiraEn:  time.Now().Add(time.Minute * 15),
+			FinanzasID: *finanzaId,
+			Codigo:     codigo,
+			ExpiraEn:   time.Now().Add(time.Minute * 15),
 		}
 
 		err = r.DB.Create(&invitacion).Error
 		if err == nil {
-			return nil
+			invitacionRespuesta.Codigo = invitacion.Codigo
+			break
 		}
 
 		if strings.Contains(err.Error(), "UNIQUE constraint failed") || strings.Contains(err.Error(), "duplicate key") {
-			return err
+			return nil, err
 		}
 
-		return err
+		return nil, err
 	}
-	return nil
+	return &invitacionRespuesta, nil
 }

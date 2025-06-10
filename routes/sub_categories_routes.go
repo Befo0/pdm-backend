@@ -16,7 +16,6 @@ func SubCategoriaRouter(r *gin.Engine) {
 	subCategoria := r.Group("/sub-categoria")
 	subCategoria.Use(middlewares.AuthMiddleware())
 	{
-		subCategoria.GET("/opciones", handler.GetSubCategories)
 		subCategoria.GET("/lista", handler.GetSubCategoriesList)
 		subCategoria.GET("/categoria/:id", handler.GetSubCategoryById)
 		subCategoria.GET("/opciones-gasto", handler.GetSubCategoriesExpensesType)

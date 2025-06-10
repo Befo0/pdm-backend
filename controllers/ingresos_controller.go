@@ -19,37 +19,6 @@ func NewIngresosHandler(ingresosRepo *repositories.IngresosRepository) *Ingresos
 	return &IngresosHandler{IngresosRepo: ingresosRepo}
 }
 
-func (h *IngresosHandler) GetIncomes(c *gin.Context) {
-
-	var finanzaId uint
-
-	userClaims, httpCode, jsonResponse := services.GetClaims(c)
-	if userClaims == nil {
-		c.JSON(httpCode, jsonResponse)
-		return
-	}
-
-	id, err := services.GetFinanceId(c)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "El formato del query es incorrecto"})
-		return
-	}
-
-	finanzaId = userClaims.FinanzaId
-
-	if id != 0 {
-		finanzaId = id
-	}
-
-	opcionesIngresos, err := h.IngresosRepo.GetIncomes(finanzaId)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Ocurrio un error al conseguir las opciones de ingresos"})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"ingresos": opcionesIngresos})
-}
-
 func (h *IngresosHandler) GetIncomesList(c *gin.Context) {
 
 	var finanzaId uint

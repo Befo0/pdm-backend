@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"net/http"
 	"pdm-backend/repositories"
 	"pdm-backend/services"
 
@@ -29,7 +30,11 @@ func (h *InvitacionHandler) CreateInvite(c *gin.Context) {
 		return
 	}
 
-	err := h.InvitacionRepo.CreateInvite(finanzaId)
+	invitacion, err := h.InvitacionRepo.CreateInvite(finanzaId)
 	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Ocurrio un error al crear la invitación"})
+		return
 	}
+
+	c.JSON(http.StatusOK, gin.H{"success": true, "codigo_invitacion": invitacion.Codigo})
 }

@@ -19,13 +19,13 @@ func NewTransaccionRepository(db *gorm.DB) *TransaccionRepository {
 }
 
 type ListaTransacciones struct {
-	TransaccionId    uint
-	NombreCategoria  string
-	Monto            float64
-	TipoMovimientoId uint
-	TipoMovimiento   string
-	FechaTransaccion string
-	NombreUsuario    string
+	TransaccionId    uint    `json:"transaccion_id"`
+	NombreCategoria  string  `json:"nombre_categoria"`
+	Monto            float64 `json:"monto_transaccion"`
+	TipoMovimientoId uint    `json:"tipo_movimiento_id"`
+	TipoMovimiento   string  `json:"tipo_movimiento_nombre"`
+	FechaTransaccion string  `json:"fecha_transaccion"`
+	NombreUsuario    string  `json:"nombre_usuario"`
 }
 
 func (r *TransaccionRepository) GetTransactions(inicioMes, finMes time.Time, finanzaId uint) ([]ListaTransacciones, error) {
@@ -49,6 +49,7 @@ func (r *TransaccionRepository) GetTransactions(inicioMes, finMes time.Time, fin
 		Joins("LEFT JOIN tipo_ingresos ON tipo_ingresos.id = transacciones.tipo_ingresos_id").
 		Joins("LEFT JOIN tipo_registros ON tipo_registros.id = transacciones.tipo_registro_id").
 		Joins("LEFT JOIN users ON users.id = transacciones.user_id").
+		Order("transacciones.fecha_registro DESC").
 		Scan(&transacciones).Error
 
 	if err != nil {
@@ -56,6 +57,74 @@ func (r *TransaccionRepository) GetTransactions(inicioMes, finMes time.Time, fin
 	}
 
 	return transacciones, nil
+}
+
+type OpcionesTransaccion struct {
+	IdRegistro     uint   `json:"tipo_registro_id"`
+	NombreRegistro string `json:"tipo_registro_nombre"`
+	Opciones       []interface{}
+}
+
+func (r *TransaccionRepository) GetOptions(finanzaId uint) ([]OpcionesTransaccion, error) {
+
+	opcionesTransaccion := []OpcionesTransaccion{}
+	errCh := make(chan error, 2)
+
+	ingresosRepo := NewIngresosRepository(r.DB)
+	subCategoriaRepo := NewSubCategoriaRepository(r.DB)
+	var wg sync.WaitGroup
+
+	err := r.DB.Model(models.TipoRegistro{}).
+		Select("tipo_registros.id AS id_registro, tipo_registros.nombre_tipo_registro AS nombre_registro").
+		Scan(&opcionesTransaccion).Error
+	if err != nil {
+		return nil, err
+	}
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		subCategoriaOpciones, err := subCategoriaRepo.GetSubCategories(finanzaId)
+		if err != nil {
+			errCh <- err
+			return
+		}
+		for i := range opcionesTransaccion {
+			if opcionesTransaccion[i].IdRegistro == 2 {
+				opcionesTransaccion[i].Opciones = append(opcionesTransaccion[i].Opciones, subCategoriaOpciones)
+				break
+			}
+		}
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		ingresosOpciones, err := ingresosRepo.GetIncomes(finanzaId)
+		if err != nil {
+			errCh <- err
+			return
+		}
+		for i := range opcionesTransaccion {
+			if opcionesTransaccion[i].IdRegistro == 1 {
+				opcionesTransaccion[i].Opciones = append(opcionesTransaccion[i].Opciones, ingresosOpciones)
+				break
+			}
+		}
+	}()
+
+	go func() {
+		wg.Wait()
+		close(errCh)
+	}()
+
+	for err := range errCh {
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return opcionesTransaccion, nil
 }
 
 type Transaccion struct {
@@ -114,6 +183,25 @@ func (r *TransaccionRepository) GetTransactionById(transaccionId *uint) (*Transa
 	}
 
 	return &transaccion, nil
+}
+
+type IdSubCategorias struct {
+	CategoriaId uint
+	GastoId     uint
+}
+
+func (r *TransaccionRepository) GetIds(subCategoriaId uint) (*IdSubCategorias, error) {
+
+	var identificadores IdSubCategorias
+
+	err := r.DB.Model(models.SubCategoriaEgreso{}).Where("sub_categoria_egresos.id = ?", subCategoriaId).
+		Select("sub_categoria_egresos.categoria_egreso_id AS categoria_id, sub_categoria_egresos.tipo_presupuesto_id AS gasto_id").
+		Scan(&identificadores).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return &identificadores, nil
 }
 
 func (r *TransaccionRepository) CreateTransaction(transaccion *models.Transacciones) error {
@@ -187,8 +275,8 @@ func (r *TransaccionRepository) BuildWebSocketEvent(finanzaId uint, fecha time.T
 	inicioMes := time.Date(fecha.Year(), fecha.Month(), 1, 0, 0, 0, 0, time.UTC)
 	finMes := inicioMes.AddDate(0, 1, 0)
 
-	var finanzaRepo *FinanzaRepository
-	var ahorroRepo *AhorroRepository
+	finanzaRepo := NewFinanzaRepository(r.DB)
+	ahorroRepo := NewAhorroRepository(r.DB)
 
 	wg.Add(1)
 	go func() {

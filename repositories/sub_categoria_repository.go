@@ -16,9 +16,9 @@ func NewSubCategoriaRepository(db *gorm.DB) *SubCategoriaRepository {
 }
 
 type SubCategoriasFinanzas struct {
-	SubCategoriaId          uint
-	SubCategoriaNombre      string
-	SubCategoriaPresupuesto float64
+	SubCategoriaId          uint    `json:"sub_categoria_id"`
+	SubCategoriaNombre      string  `json:"sub_categoria_nombre"`
+	SubCategoriaPresupuesto float64 `json:"sub_categoria_presupuesto"`
 }
 
 func (r *SubCategoriaRepository) GetSubCategories(finanzaId uint) ([]SubCategoriasFinanzas, error) {
@@ -28,12 +28,12 @@ func (r *SubCategoriaRepository) GetSubCategories(finanzaId uint) ([]SubCategori
 	mes := int(fechaActual.Month())
 	anio := fechaActual.Year()
 
-	err := r.DB.Model(models.SubCategoriaEgreso{}).Where("finanzas_id = ?", finanzaId).
+	err := r.DB.Model(models.SubCategoriaEgreso{}).Where("sub_categoria_egresos.finanzas_id = ?", finanzaId).
 		Select(`
 		sub_categoria_egresos.id AS sub_categoria_id, 
 		sub_categoria_egresos.nombre_sub_categoria AS sub_categoria_nombre, 
 		CASE 
-			WHEN sub_categoria_egresos.nombre_sub_categoria = "Ahorro" THEN meta_mensuals.monto_meta
+			WHEN sub_categoria_egresos.nombre_sub_categoria = 'Ahorro' THEN meta_mensuals.monto_meta
 			ELSE sub_categoria_egresos.presupuesto_mensual 
 		END AS sub_categoria_presupuesto
 		`).
@@ -50,8 +50,8 @@ func (r *SubCategoriaRepository) GetSubCategories(finanzaId uint) ([]SubCategori
 }
 
 type GastosOpciones struct {
-	TipoId     uint
-	TipoNombre string
+	TipoId     uint   `json:"tipo_id"`
+	TipoNombre string `json:"tipo_nombre"`
 }
 
 func (r *SubCategoriaRepository) GetSubCategoriesExpensesType() ([]GastosOpciones, error) {
@@ -68,12 +68,12 @@ func (r *SubCategoriaRepository) GetSubCategoriesExpensesType() ([]GastosOpcione
 }
 
 type SubCategoriasLista struct {
-	SubCategoriaId     uint
-	CategoriaNombre    string
-	SubCategoriaNombre string
-	TipoGasto          string
-	Presupuesto        float64
-	NombreUsuario      string
+	SubCategoriaId     uint    `json:"sub_categoria_id"`
+	CategoriaNombre    string  `json:"categoria_nombre"`
+	SubCategoriaNombre string  `json:"sub_categoria_nombre"`
+	TipoGasto          string  `json:"tipo_gasto"`
+	Presupuesto        float64 `json:"presupuesto"`
+	NombreUsuario      string  `json:"nombre_usuario"`
 }
 
 func (r *SubCategoriaRepository) GetSubCategoriesList(finanzaId uint) ([]SubCategoriasLista, error) {

@@ -15,16 +15,17 @@ func NewIngresosRepository(db *gorm.DB) *IngresosRepository {
 }
 
 type IngresosOpciones struct {
-	IdIngreso     uint   `json:"id_ingreso"`
-	NombreIngreso string `json:"nombre_ingreso"`
+	IdIngreso          uint    `json:"id_ingreso"`
+	NombreIngreso      string  `json:"nombre_ingreso"`
+	IngresoPresupuesto float64 `json:"ingreso_presupuesto"`
 }
 
 func (r *IngresosRepository) GetIncomes(finanzaId uint) ([]IngresosOpciones, error) {
 
-	var opciones []IngresosOpciones
+	opciones := []IngresosOpciones{}
 
 	err := r.DB.Model(models.TipoIngresos{}).Where("finanzas_id = ?", finanzaId).
-		Select("tipo_ingresos.id AS id_ingreso, tipo_ingresos.nombre_ingresos AS nombre_ingreso").
+		Select("tipo_ingresos.id AS id_ingreso, tipo_ingresos.nombre_ingresos AS nombre_ingreso, tipo_ingresos.monto_ingreso AS ingreso_presupuesto").
 		Scan(&opciones).Error
 
 	if err != nil {
@@ -43,7 +44,7 @@ type IngresosLista struct {
 
 func (r *IngresosRepository) GetIncomesList(finanzaId uint) ([]IngresosLista, error) {
 
-	var listaIngresos []IngresosLista
+	listaIngresos := []IngresosLista{}
 
 	err := r.DB.Model(models.TipoIngresos{}).Where("finanzas_id = ?", finanzaId).
 		Select("tipo_ingresos.id AS id_ingreso, tipo_ingresos.nombre_ingresos AS nombre_ingreso, tipo_ingresos.monto_ingreso AS monto_ingreso, users.nombre AS nombre_usuario").

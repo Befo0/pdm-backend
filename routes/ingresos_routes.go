@@ -16,7 +16,6 @@ func IngresosRouter(r *gin.Engine) {
 	ingresos := r.Group("/ingresos")
 	ingresos.Use(middlewares.AuthMiddleware())
 	{
-		ingresos.GET("/opciones", handler.GetIncomes)
 		ingresos.GET("/lista", handler.GetIncomesList)
 		ingresos.GET("/ingreso/:id", handler.GetIncomeById)
 		ingresos.POST("/crear", handler.CreateIncome)

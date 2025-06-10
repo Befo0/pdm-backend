@@ -184,18 +184,19 @@ func (r FinanzaRepository) GetDashboardSummary(finanzaId uint, inicioMes, finMes
 }
 
 type DashboardData struct {
-	CategoriaId      uint `json:"-"`
-	CategoriaNombre  string
-	TotalPresupuesto float64
-	Gasto            float64
-	Diferencia       float64
+	CategoriaId      uint    `json:"-"`
+	CategoriaNombre  string  `json:"categoria_nombre"`
+	TotalPresupuesto float64 `json:"total_presupuesto"`
+	Gasto            float64 `json:"gasto"`
+	Diferencia       float64 `json:"diferencia"`
 }
 
 func (r *FinanzaRepository) GetDataSummary(inicioMes, finMes time.Time, finanzaId uint) ([]DashboardData, error) {
 
 	var resultados []DashboardData
 
-	err := r.DB.Model(models.CategoriaEgreso{}).Select("categoria_egresos.id AS categoria_id, categoria_egresos.nombre_categoria AS categoria_nombre, COALESCE(SUM(sub_categoria_egresos.presupuesto_mensual), 0) AS total_presupuesto").
+	err := r.DB.Model(models.CategoriaEgreso{}).Where("categoria_egresos.finanzas_id = ?", finanzaId).
+		Select("categoria_egresos.id AS categoria_id, categoria_egresos.nombre_categoria AS categoria_nombre, COALESCE(SUM(sub_categoria_egresos.presupuesto_mensual), 0) AS total_presupuesto").
 		Joins("LEFT JOIN sub_categoria_egresos ON sub_categoria_egresos.categoria_egreso_id = categoria_egresos.id").
 		Group("categoria_egresos.id, categoria_egresos.nombre_categoria").
 		Order("categoria_egresos.nombre_categoria").
