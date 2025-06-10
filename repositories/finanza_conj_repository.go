@@ -104,19 +104,18 @@ func (r *FinanzaConjRepository) JoinUser(userId uint, codigo string) error {
 }
 
 type FinancesResponse struct {
-	FinanzaId     uint
-	FinanzaNombre string
-	NombreAdmin   string
+	FinanzaId     uint   `json:"finanza_id"`
+	FinanzaNombre string `json:"finanza_nombre"`
+	NombreAdmin   string `json:"nombre_admin"`
 }
 
 func (r *FinanzaConjRepository) GetConjFinances(userId uint) ([]FinancesResponse, error) {
 
-	var financeResponse []FinancesResponse
+	financeResponse := []FinancesResponse{}
 
-	err := r.DB.Model(models.FinanzasConjunto{}).Where("user_id = ? AND activo = ?", userId, true).
+	err := r.DB.Model(models.FinanzasConjunto{}).Where("finanzas_conjuntos.user_id = ? AND finanzas_conjuntos.activo = ?", userId, true).
 		Select("finanzas.id AS finanza_id, finanzas.titulo AS finanza_nombre, users.nombre AS nombre_admin").
-		Joins("INNER JOIN finanzas ON finanzas.id = finanzas_conjuntos.finanzas_id").
-		Joins("LEFT JOIN finanzas_conjuntos ON finanzas_conjuntos.finanzas_id = finanzas.id AND finanzas_conjuntos.roles_id = 1").
+		Joins("INNER JOIN finanzas ON finanzas.id = finanzas_conjuntos.finanzas_id AND finanzas_conjuntos.roles_id = 1").
 		Joins("LEFT JOIN users ON users.id = finanzas_conjuntos.user_id").
 		Scan(&financeResponse).Error
 	if err != nil {
@@ -127,15 +126,15 @@ func (r *FinanzaConjRepository) GetConjFinances(userId uint) ([]FinancesResponse
 }
 
 type MiembrosFinanza struct {
-	IdUsuario     uint
-	NombreUsuario string
-	RolUsuario    uint
+	IdUsuario     uint   `json:"id_usuario"`
+	NombreUsuario string `json:"nombre_usuario"`
+	RolUsuario    uint   `json:"rol_usuario"`
 }
 
 type ConjFinancesDetails struct {
-	FinanzaTitulo      string
-	FinanzaDescripcion string
-	Miembros           []MiembrosFinanza
+	FinanzaTitulo      string            `json:"finanza_titulo"`
+	FinanzaDescripcion string            `json:"finanza_descripcion"`
+	Miembros           []MiembrosFinanza `json:"finanza_miembros" gorm:"-"`
 }
 
 func (r *FinanzaConjRepository) GetConjFinancesDetails(finanzaId uint) (*ConjFinancesDetails, error) {
@@ -153,7 +152,7 @@ func (r *FinanzaConjRepository) GetConjFinancesDetails(finanzaId uint) (*ConjFin
 	err = r.DB.Model(models.FinanzasConjunto{}).
 		Select("finanzas_conjuntos.user_id AS id_usuario, users.nombre AS nombre_usuario, finanzas_conjuntos.roles_id AS rol_usuario").
 		Joins("JOIN users ON users.id = finanzas_conjuntos.user_id").
-		Where("finanzas_conjuntos.finanzas_id = ?", finanzaId).
+		Where("finanzas_conjuntos.finanzas_id = ? AND finanzas_conjuntos.activo = ?", finanzaId, true).
 		Scan(&miembros).Error
 	if err != nil {
 		return nil, err

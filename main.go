@@ -36,6 +36,7 @@ func main() {
 	routes.SubCategoriaRouter(r)
 	routes.IngresosRouter(r)
 	routes.AhorroRouter(r)
+	routes.InvitacionRouter(r)
 	routes.FinanzaConjuntoRouter(r)
 	websockets.WebSocketRouter(r)
 

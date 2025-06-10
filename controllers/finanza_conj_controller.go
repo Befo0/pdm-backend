@@ -114,13 +114,13 @@ func (h *FinanzaConjHandler) GetConjFinancesDetails(c *gin.Context) {
 		return
 	}
 
-	finanzaId, err := services.GetFinanceId(c)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "El formato del query es incorrecto"})
+	finanzaId, httpCode, jsonResponse := services.ParseUint(c)
+	if finanzaId == nil {
+		c.JSON(httpCode, jsonResponse)
 		return
 	}
 
-	financeDetails, err := h.FinanceConjRepo.GetConjFinancesDetails(finanzaId)
+	financeDetails, err := h.FinanceConjRepo.GetConjFinancesDetails(*finanzaId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Ocurrio un error al conseguir los detalles de la finanza"})
 		return
@@ -166,13 +166,13 @@ func (h *FinanzaConjHandler) LeaveConjFinance(c *gin.Context) {
 		return
 	}
 
-	finanzaId, err := services.GetFinanceId(c)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "El formato del query es incorrecto"})
+	finanzaId, httpCode, jsonResponse := services.ParseUint(c)
+	if finanzaId == nil {
+		c.JSON(httpCode, jsonResponse)
 		return
 	}
 
-	err = h.FinanceConjRepo.LeaveConjFinance(userClaims.UserId, finanzaId)
+	err := h.FinanceConjRepo.LeaveConjFinance(userClaims.UserId, *finanzaId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Ocurrio un error al eliminar el usuario"})
 		return

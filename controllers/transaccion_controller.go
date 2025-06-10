@@ -193,11 +193,6 @@ func (h *TransaccionHandler) CreateTransaction(c *gin.Context) {
 		nowAño, nowMes, _ := ahora.Date()
 
 		if fechaAño == nowAño && fechaMes == nowMes {
-			// ✅ mes actual
-			//} else if fechaAño == nowAño && int(fechaMes) == int(nowMes)-1 {
-			// ✅ mes anterior
-			//} else if fechaaño == nowaño-1 && nowmes == 1 && fechames == 12 {
-			// ✅ caso especial: estamos en enero y permite diciembre del año anterior
 		} else {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"success": false,
