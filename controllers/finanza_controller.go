@@ -52,6 +52,7 @@ func (h *FinanzaHandler) GetDashboardSummary(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"success":           true,
+		"finanza_id":        finanzaId,
 		"finanza_principal": finanzaPrincipal,
 	})
 }
@@ -90,5 +91,9 @@ func (h *FinanzaHandler) GetDashboardData(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"success": true, "categorias": resultado})
+	c.JSON(http.StatusOK, gin.H{
+		"success":    true,
+		"finanza_id": finanzaId,
+		"categorias": resultado,
+	})
 }

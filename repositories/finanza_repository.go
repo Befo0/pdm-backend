@@ -184,6 +184,7 @@ func (r FinanzaRepository) GetDashboardSummary(finanzaId uint, inicioMes, finMes
 }
 
 type DashboardData struct {
+	FinanzaId        uint    `json:"finanza_id"`
 	CategoriaId      uint    `json:"-"`
 	CategoriaNombre  string  `json:"categoria_nombre"`
 	TotalPresupuesto float64 `json:"total_presupuesto"`
@@ -244,6 +245,7 @@ func (r *FinanzaRepository) GetDataSummary(inicioMes, finMes time.Time, finanzaI
 
 		diferencia := resultados[index].TotalPresupuesto - totalGasto
 
+		resultados[index].FinanzaId = finanzaId
 		resultados[index].Gasto = totalGasto
 		resultados[index].Diferencia = diferencia
 	}
