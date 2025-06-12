@@ -74,7 +74,7 @@ func (h *Handler) Login(c *gin.Context) {
 
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			c.JSON(http.StatusConflict, gin.H{"success": false, "errors": gin.H{"email": "No hay cuenta asociada a este correo electronico"}})
+			c.JSON(http.StatusNotFound, gin.H{"success": false, "errors": gin.H{"email": "No hay cuenta asociada a este correo electronico"}})
 			return
 		}
 		c.JSON(http.StatusInternalServerError, gin.H{"sucess": false, "message": "Error en el servidor"})
@@ -100,7 +100,7 @@ func (h *Handler) Login(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"success": true, "token": token})
+	c.JSON(http.StatusOK, gin.H{"success": true, "token": token, "datos_user": gin.H{"id": user.ID, "nombre": user.Nombre, "correo": user.Correo}})
 }
 
 type UpdateProfileRequest struct {
@@ -140,7 +140,7 @@ func (h *Handler) UpdateProfile(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"success": true, "message": "El perfil ha sido actualizado correctamente"})
+	c.JSON(http.StatusOK, gin.H{"success": true, "message": "El perfil ha sido actualizado correctamente", "datos_user": gin.H{"id": user.ID, "nombre": user.Nombre, "correo": user.Correo}})
 }
 
 type UpdatePasswordRequest struct {
