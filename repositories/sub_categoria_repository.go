@@ -68,6 +68,7 @@ func (r *SubCategoriaRepository) GetSubCategoriesExpensesType() ([]GastosOpcione
 }
 
 type SubCategoriasLista struct {
+	FinanzaId          uint    `json:"finanza_id"`
 	SubCategoriaId     uint    `json:"sub_categoria_id"`
 	CategoriaNombre    string  `json:"categoria_nombre"`
 	SubCategoriaNombre string  `json:"sub_categoria_nombre"`
@@ -84,7 +85,8 @@ func (r *SubCategoriaRepository) GetSubCategoriesList(finanzaId uint) ([]SubCate
 	anio := ahora.Year()
 
 	err := r.DB.Model(models.SubCategoriaEgreso{}).Where("sub_categoria_egresos.finanzas_id = ?", finanzaId).
-		Select(`sub_categoria_egresos.id AS sub_categoria_id, 
+		Select(`sub_categoria_egresos.finanzas_id AS finanza_id,
+		sub_categoria_egresos.id AS sub_categoria_id, 
 		categoria_egresos.nombre_categoria AS categoria_nombre, 
 		sub_categoria_egresos.nombre_sub_categoria AS sub_categoria_nombre, 
 		tipo_presupuestos.nombre_tipo_presupuesto AS tipo_gasto, 

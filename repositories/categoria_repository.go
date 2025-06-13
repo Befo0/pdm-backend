@@ -124,9 +124,9 @@ func (r *CategoriaRepository) GetCategoryById(id *uint) (*models.CategoriaEgreso
 }
 
 type ListaCategorias struct {
-	CategoriaId     uint
-	CategoriaNombre string
-	NombreUsuario   string
+	CategoriaId     uint   `json:"categoria_id"`
+	CategoriaNombre string `json:"categoria_nombre"`
+	NombreUsuario   string `json:"nombre_usuario"`
 }
 
 func (r *CategoriaRepository) GetCategoriesList(finanzaId uint) ([]ListaCategorias, error) {

@@ -208,5 +208,5 @@ func (h *CategoriaHandler) GetCategoriesList(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"lista_categorias": listaCategorias})
+	c.JSON(http.StatusOK, gin.H{"lista_categorias": listaCategorias, "finanza_id": finanzaId})
 }
