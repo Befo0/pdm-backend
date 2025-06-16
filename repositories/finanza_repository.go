@@ -211,6 +211,8 @@ func (r *FinanzaRepository) GetDataSummary(inicioMes, finMes time.Time, finanzaI
 
 	for index := range resultados {
 
+		resultados[index].FinanzaId = finanzaId
+
 		if resultados[index].CategoriaNombre == "Ahorro" {
 			var meta models.MetaMensual
 			err := r.DB.Model(models.MetaMensual{}).
@@ -245,7 +247,6 @@ func (r *FinanzaRepository) GetDataSummary(inicioMes, finMes time.Time, finanzaI
 
 		diferencia := resultados[index].TotalPresupuesto - totalGasto
 
-		resultados[index].FinanzaId = finanzaId
 		resultados[index].Gasto = totalGasto
 		resultados[index].Diferencia = diferencia
 	}

@@ -36,6 +36,7 @@ func (r *IngresosRepository) GetIncomes(finanzaId uint) ([]IngresosOpciones, err
 }
 
 type IngresosLista struct {
+	FinanzaId     uint    `json:"finanza_id"`
 	IdIngreso     uint    `json:"id_ingreso"`
 	NombreIngreso string  `json:"nombre_ingreso"`
 	MontoIngreso  float64 `json:"monto_ingreso"`
@@ -47,7 +48,7 @@ func (r *IngresosRepository) GetIncomesList(finanzaId uint) ([]IngresosLista, er
 	listaIngresos := []IngresosLista{}
 
 	err := r.DB.Model(models.TipoIngresos{}).Where("finanzas_id = ?", finanzaId).
-		Select("tipo_ingresos.id AS id_ingreso, tipo_ingresos.nombre_ingresos AS nombre_ingreso, tipo_ingresos.monto_ingreso AS monto_ingreso, users.nombre AS nombre_usuario").
+		Select("tipo_ingresos.finanzas_id AS finanza_id, tipo_ingresos.id AS id_ingreso, tipo_ingresos.nombre_ingresos AS nombre_ingreso, tipo_ingresos.monto_ingreso AS monto_ingreso, users.nombre AS nombre_usuario").
 		Joins("LEFT JOIN users ON users.id = tipo_ingresos.user_id").
 		Scan(&listaIngresos).Error
 
