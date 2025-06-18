@@ -126,7 +126,7 @@ func (h *FinanzaConjHandler) GetConjFinancesDetails(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"success": true, "detalles_finanza": financeDetails})
+	c.JSON(http.StatusOK, gin.H{"success": true, "finanza_id": finanzaId, "detalles_finanza": financeDetails})
 }
 
 func (h *FinanzaConjHandler) DeleteUserFromFinance(c *gin.Context) {

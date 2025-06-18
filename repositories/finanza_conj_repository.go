@@ -77,25 +77,36 @@ func (r *FinanzaConjRepository) JoinUser(userId uint, codigo string) error {
 	}
 
 	var existente models.FinanzasConjunto
-	err = r.DB.Where("finanzas_id = ? AND user_id = ?", invitacion.FinanzasID, userId).First(&existente).Error
+	err = r.DB.Where("finanzas_id = ? AND user_id = ? AND activo = ?", invitacion.FinanzasID, userId, true).First(&existente).Error
 	if err == nil {
 		return errors.New("Ya perteneces a esta finanza conjunta")
 	}
 
 	if time.Now().Before(invitacion.ExpiraEn) {
-		finanzaConjunta := models.FinanzasConjunto{
-			FinanzasID: invitacion.FinanzasID,
-			UserID:     userId,
-			RolesID:    2,
-			Activo:     true,
-			FechaUnion: time.Now(),
-		}
+		var inactivo models.FinanzasConjunto
+		err = r.DB.Where("finanzas_id = ? AND user_id = ? AND activo = ?", invitacion.FinanzasID, userId, false).First(&inactivo).Error
+		if err == nil {
+			inactivo.Activo = true
+			inactivo.FechaUnion = time.Now()
 
-		err := r.DB.Create(&finanzaConjunta).Error
-		if err != nil {
-			return err
-		}
+			err := r.DB.Save(&inactivo).Error
+			if err != nil {
+				return err
+			}
+		} else {
+			finanzaConjunta := models.FinanzasConjunto{
+				FinanzasID: invitacion.FinanzasID,
+				UserID:     userId,
+				RolesID:    2,
+				Activo:     true,
+				FechaUnion: time.Now(),
+			}
 
+			err := r.DB.Create(&finanzaConjunta).Error
+			if err != nil {
+				return err
+			}
+		}
 	} else {
 		return errors.New("El codigo ya ha expirado")
 	}
