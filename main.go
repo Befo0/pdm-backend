@@ -51,7 +51,7 @@ func main() {
 
 	PORT := os.Getenv("PORT")
 	if PORT == "" {
-		PORT = ":8080"
+		PORT = "8080"
 	}
 	r.Run(":" + PORT)
 }
