@@ -14,12 +14,12 @@ func ParseMonthAndYear(c *gin.Context) (inicioMes, finMes time.Time, httpCode in
 
 	mes, err := strconv.Atoi(mesString)
 	if err != nil || mes < 1 || mes > 12 {
-		return time.Time{}, time.Time{}, http.StatusBadRequest, gin.H{"error": "Mes inválido"}, false
+		return time.Time{}, time.Time{}, http.StatusBadRequest, gin.H{"success": false, "message": "Mes inválido"}, false
 	}
 
 	anio, err := strconv.Atoi(anioString)
 	if err != nil || anio < 1900 {
-		return time.Time{}, time.Time{}, http.StatusBadRequest, gin.H{"error": "Año inválido"}, false
+		return time.Time{}, time.Time{}, http.StatusBadRequest, gin.H{"success": false, "message": "Año inválido"}, false
 	}
 
 	inicioMes = time.Date(anio, time.Month(mes), 1, 0, 0, 0, 0, time.UTC)

@@ -22,9 +22,11 @@ type JWTClaims struct {
 
 func init() {
 
-	err := godotenv.Load(".env")
-	if err != nil {
-		log.Fatal("La variable de entorno no ha sido cargada")
+	if os.Getenv("ENV") != "production" {
+		err := godotenv.Load(".env")
+		if err != nil {
+			log.Println("No se pudo cargar .env (esto es normal en producción)")
+		}
 	}
 
 	secret = os.Getenv("SECRET_WORD")

@@ -49,13 +49,16 @@ func (h *TransaccionHandler) GetTransactions(c *gin.Context) {
 		return
 	}
 
+	mes := int(inicioMes.Month())
+	year := inicioMes.Year()
+
 	transacciones, err := h.TransaccionRepo.GetTransactions(inicioMes, finMes, finanzaId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Hubo un error al conseguir las transacciones"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"success": true, "transacciones": transacciones})
+	c.JSON(http.StatusOK, gin.H{"success": true, "finanza_id": finanzaId, "mes": mes, "anio": year, "transacciones": transacciones})
 }
 
 func (h *TransaccionHandler) GetTransactionOptions(c *gin.Context) {
