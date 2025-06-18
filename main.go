@@ -53,5 +53,5 @@ func main() {
 	if PORT == "" {
 		PORT = ":8080"
 	}
-	r.Run(PORT)
+	r.Run(":" + PORT)
 }
