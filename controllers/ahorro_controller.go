@@ -52,7 +52,7 @@ func (h *AhorroHandler) GetSavingsData(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"success": true, "data": ahorroData})
+	c.JSON(http.StatusOK, gin.H{"success": true, "finanza_id": finanzaId, "data": ahorroData})
 }
 
 type SavingRequest struct {

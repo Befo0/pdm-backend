@@ -16,9 +16,9 @@ func NewSubCategoriaRepository(db *gorm.DB) *SubCategoriaRepository {
 }
 
 type SubCategoriasFinanzas struct {
-	SubCategoriaId          uint    `json:"sub_categoria_id"`
-	SubCategoriaNombre      string  `json:"sub_categoria_nombre"`
-	SubCategoriaPresupuesto float64 `json:"sub_categoria_presupuesto"`
+	SubCategoriaId          uint    `json:"id_opcion"`
+	SubCategoriaNombre      string  `json:"nombre_opcion"`
+	SubCategoriaPresupuesto float64 `json:"presupuesto_opcion"`
 }
 
 func (r *SubCategoriaRepository) GetSubCategories(finanzaId uint) ([]SubCategoriasFinanzas, error) {
