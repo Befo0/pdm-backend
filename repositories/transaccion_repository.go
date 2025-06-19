@@ -6,7 +6,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
@@ -251,8 +250,7 @@ func (r *TransaccionRepository) GetSavingSubCategorie(finanzaId uint) (uint, err
 }
 
 type PayloadEvent struct {
-	Event   string      `json:"event"`
-	Payload interface{} `json:"payload"`
+	Event string `json:"event"`
 }
 
 type BroadCastMessage struct {
@@ -260,97 +258,19 @@ type BroadCastMessage struct {
 	EventInfo []PayloadEvent `json:"event_info"`
 }
 
-func (r *TransaccionRepository) BuildWebSocketEvent(finanzaId uint, fecha time.Time, transactionSubCategorieId *uint, savingSubCategorieId uint) (*BroadCastMessage, error) {
-
-	type result[T any] struct {
-		data T
-		err  error
+func (r *TransaccionRepository) BuildWebSocketEvent(finanzaId uint, transactionSubCategorieId *uint, savingSubCategorieId uint) *BroadCastMessage {
+	eventInfo := []PayloadEvent{
+		{Event: "resumen_finanza"},
+		{Event: "datos_finanza"},
+		{Event: "lista_transacciones"},
 	}
 
-	var (
-		eventInfo       []PayloadEvent
-		wg              sync.WaitGroup
-		chResumen       = make(chan result[gin.H])
-		chDatos         = make(chan result[[]DashboardData])
-		chTransacciones = make(chan result[[]ListaTransacciones])
-		chAhorro        = make(chan result[[]AhorroResponse])
-	)
-
-	inicioMes := time.Date(fecha.Year(), fecha.Month(), 1, 0, 0, 0, 0, time.UTC)
-	finMes := inicioMes.AddDate(0, 1, 0)
-
-	finanzaRepo := NewFinanzaRepository(r.DB)
-	ahorroRepo := NewAhorroRepository(r.DB)
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		resumen, err := finanzaRepo.GetDashboardSummary(finanzaId, inicioMes, finMes)
-		chResumen <- result[gin.H]{resumen, err}
-	}()
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		datos, err := finanzaRepo.GetDataSummary(inicioMes, finMes, finanzaId)
-		chDatos <- result[[]DashboardData]{datos, err}
-	}()
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		lista, err := r.GetTransactions(inicioMes, finMes, finanzaId)
-		chTransacciones <- result[[]ListaTransacciones]{lista, err}
-	}()
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		if transactionSubCategorieId != nil && *transactionSubCategorieId == savingSubCategorieId {
-			ahorro, err := ahorroRepo.GetSavingsData(finanzaId, fecha.Year())
-			chAhorro <- result[[]AhorroResponse]{ahorro, err}
-		} else {
-			chAhorro <- result[[]AhorroResponse]{nil, nil}
-		}
-	}()
-
-	go func() {
-		wg.Wait()
-		close(chResumen)
-		close(chDatos)
-		close(chTransacciones)
-		close(chAhorro)
-	}()
-
-	resumenRes := <-chResumen
-	if resumenRes.err != nil {
-		return nil, resumenRes.err
+	if transactionSubCategorieId != nil && *transactionSubCategorieId == savingSubCategorieId {
+		eventInfo = append(eventInfo, PayloadEvent{Event: "ahorro_finanza"})
 	}
 
-	datosRes := <-chDatos
-	if datosRes.err != nil {
-		return nil, datosRes.err
-	}
-
-	transaccionesRes := <-chTransacciones
-	if transaccionesRes.err != nil {
-		return nil, transaccionesRes.err
-	}
-
-	ahorroRes := <-chAhorro
-	if ahorroRes.err != nil {
-		return nil, ahorroRes.err
-	}
-
-	eventInfo = append(eventInfo, PayloadEvent{Event: "resumen_finanza", Payload: resumenRes.data})
-	eventInfo = append(eventInfo, PayloadEvent{Event: "datos_finanza", Payload: datosRes.data})
-	eventInfo = append(eventInfo, PayloadEvent{Event: "lista_transacciones", Payload: transaccionesRes.data})
-	eventInfo = append(eventInfo, PayloadEvent{Event: "ahorro_finanza", Payload: ahorroRes.data})
-
-	webSocketEvent := BroadCastMessage{
+	return &BroadCastMessage{
 		FinanzaId: finanzaId,
 		EventInfo: eventInfo,
 	}
-
-	return &webSocketEvent, nil
 }

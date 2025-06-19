@@ -5,6 +5,7 @@ import (
 	"os"
 	"pdm-backend/routes"
 	"pdm-backend/websockets"
+	"time"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -13,20 +14,28 @@ import (
 
 func main() {
 
-	err := godotenv.Load(".env")
-	if err != nil {
-		log.Fatal("La variable de entorno no ha sido cargada")
+	if os.Getenv("ENV") != "production" {
+		err := godotenv.Load(".env")
+		if err != nil {
+			log.Println("No se pudo cargar .env (esto es normal en producción)")
+		}
 	}
+
+	gin.SetMode(gin.ReleaseMode)
 
 	r := gin.Default()
 
 	r.Use(cors.New(cors.Config{
-		AllowAllOrigins:  true,
-		AllowMethods:     []string{"GET,POST,PUT,PATCH,DELETE"},
-		AllowHeaders:     []string{"Content-Type"},
+		AllowOrigins:     []string{"*"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
+		ExposeHeaders:    []string{"Content-Length", "Authorization"},
 		AllowCredentials: true,
+		MaxAge:           12 * time.Hour,
+		AllowOriginFunc: func(origin string) bool {
+			return origin == "" || origin == "null"
+		},
 	}))
-
 	go websockets.HandleBroadCast()
 
 	routes.UserRouter(r)
@@ -41,5 +50,8 @@ func main() {
 	websockets.WebSocketRouter(r)
 
 	PORT := os.Getenv("PORT")
-	r.Run(PORT)
+	if PORT == "" {
+		PORT = "8080"
+	}
+	r.Run(":" + PORT)
 }
