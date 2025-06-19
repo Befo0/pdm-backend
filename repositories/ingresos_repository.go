@@ -15,9 +15,9 @@ func NewIngresosRepository(db *gorm.DB) *IngresosRepository {
 }
 
 type IngresosOpciones struct {
-	IdIngreso          uint    `json:"id_ingreso"`
-	NombreIngreso      string  `json:"nombre_ingreso"`
-	IngresoPresupuesto float64 `json:"ingreso_presupuesto"`
+	IdIngreso          uint    `json:"id_opcion"`
+	NombreIngreso      string  `json:"nombre_opcion"`
+	IngresoPresupuesto float64 `json:"presupuesto_opcion"`
 }
 
 func (r *IngresosRepository) GetIncomes(finanzaId uint) ([]IngresosOpciones, error) {

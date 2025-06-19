@@ -60,9 +60,9 @@ func (r *TransaccionRepository) GetTransactions(inicioMes, finMes time.Time, fin
 }
 
 type OpcionesTransaccion struct {
-	IdRegistro     uint   `json:"tipo_registro_id"`
-	NombreRegistro string `json:"tipo_registro_nombre"`
-	Opciones       []interface{}
+	IdRegistro     uint          `json:"tipo_registro_id"`
+	NombreRegistro string        `json:"tipo_registro_nombre"`
+	Opciones       []interface{} `json:"opciones"`
 }
 
 func (r *TransaccionRepository) GetOptions(finanzaId uint) ([]OpcionesTransaccion, error) {
@@ -91,7 +91,9 @@ func (r *TransaccionRepository) GetOptions(finanzaId uint) ([]OpcionesTransaccio
 		}
 		for i := range opcionesTransaccion {
 			if opcionesTransaccion[i].IdRegistro == 2 {
-				opcionesTransaccion[i].Opciones = append(opcionesTransaccion[i].Opciones, subCategoriaOpciones)
+				for _, opcion := range subCategoriaOpciones {
+					opcionesTransaccion[i].Opciones = append(opcionesTransaccion[i].Opciones, opcion)
+				}
 				break
 			}
 		}
@@ -107,7 +109,9 @@ func (r *TransaccionRepository) GetOptions(finanzaId uint) ([]OpcionesTransaccio
 		}
 		for i := range opcionesTransaccion {
 			if opcionesTransaccion[i].IdRegistro == 1 {
-				opcionesTransaccion[i].Opciones = append(opcionesTransaccion[i].Opciones, ingresosOpciones)
+				for _, opcion := range ingresosOpciones {
+					opcionesTransaccion[i].Opciones = append(opcionesTransaccion[i].Opciones, opcion)
+				}
 				break
 			}
 		}
@@ -128,15 +132,15 @@ func (r *TransaccionRepository) GetOptions(finanzaId uint) ([]OpcionesTransaccio
 }
 
 type Transaccion struct {
-	TipoMovimientoID uint    `gorm:"column:tipo_movimiento_id"`
-	TipoMovimiento   string  `gorm:"column:tipo_movimiento"`
-	Movimiento       string  `gorm:"column:movimiento"`
-	Categoria        string  `gorm:"column:categoria"`
-	TipoGasto        string  `gorm:"column:tipo_gasto"`
-	Presupuesto      float64 `gorm:"column:presupuesto"`
-	Monto            float64 `gorm:"column:monto"`
-	DescripcionGasto string  `gorm:"column:descripcion_gasto"`
-	NombreUsuario    string  `gorm:"column:nombre_usuario"`
+	TipoMovimientoID uint    `json:"tipo_movimiento_id" gorm:"column:tipo_movimiento_id"`
+	TipoMovimiento   string  `json:"tipo_movimiento" gorm:"column:tipo_movimiento"`
+	Movimiento       string  `json:"movimiento" gorm:"column:movimiento"`
+	Categoria        string  `json:"categoria" gorm:"column:categoria"`
+	TipoGasto        string  `json:"tipo_gasto" gorm:"column:tipo_gasto"`
+	Presupuesto      float64 `json:"presupuesto" gorm:"column:presupuesto"`
+	Monto            float64 `json:"monto" gorm:"column:monto"`
+	DescripcionGasto string  `json:"descripcion_gasto" gorm:"column:descripcion_gasto"`
+	NombreUsuario    string  `json:"nombre_usuario" gorm:"column:nombre_usuario"`
 }
 
 func (r *TransaccionRepository) GetTransactionById(transaccionId *uint) (*Transaccion, error) {

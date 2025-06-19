@@ -55,7 +55,7 @@ func (h *TransaccionHandler) GetTransactions(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"success": true, "transacciones": transacciones})
+	c.JSON(http.StatusOK, gin.H{"success": true, "finanza_id": finanzaId, "transacciones": transacciones})
 }
 
 func (h *TransaccionHandler) GetTransactionOptions(c *gin.Context) {
@@ -237,15 +237,15 @@ func (h *TransaccionHandler) CreateTransaction(c *gin.Context) {
 		}
 	}
 
-	//if id != 0 {
-	webSocketEvent, err := h.TransaccionRepo.BuildWebSocketEvent(finanzaId, transaccion.FechaRegistro, transaccion.SubCategoriaEgresoID, ahorroId)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Ocurrio un error al crear el evento websocket"})
-		return
-	}
+	if id != 0 {
+		webSocketEvent, err := h.TransaccionRepo.BuildWebSocketEvent(finanzaId, transaccion.FechaRegistro, transaccion.SubCategoriaEgresoID, ahorroId)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Ocurrio un error al crear el evento websocket"})
+			return
+		}
 
-	websockets.MensajeBroadcast <- *webSocketEvent
-	//}
+		websockets.MensajeBroadcast <- *webSocketEvent
+	}
 
 	c.JSON(http.StatusCreated, gin.H{"success": true, "message": "La transaccion fue creada correctamente"})
 }
