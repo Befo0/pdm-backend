@@ -74,7 +74,7 @@ func (h *Handler) Login(c *gin.Context) {
 
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			c.JSON(http.StatusNotFound, gin.H{"success": false, "errors": gin.H{"email": "No hay cuenta asociada a este correo electronico"}})
+			c.JSON(http.StatusNotFound, gin.H{"success": false, "message": "No hay cuenta asociada a este correo electronico"})
 			return
 		}
 		c.JSON(http.StatusInternalServerError, gin.H{"sucess": false, "message": "Error en el servidor"})
