@@ -59,9 +59,9 @@ func (r *TransaccionRepository) GetTransactions(inicioMes, finMes time.Time, fin
 }
 
 type OpcionesTransaccion struct {
-	IdRegistro     uint          `json:"tipo_registro_id"`
-	NombreRegistro string        `json:"tipo_registro_nombre"`
-	Opciones       []interface{} `json:"opciones"`
+	IdRegistro     uint                     `json:"tipo_registro_id"`
+	NombreRegistro string                   `json:"tipo_registro_nombre"`
+	Opciones       []map[string]interface{} `json:"opciones"`
 }
 
 func (r *TransaccionRepository) GetOptions(finanzaId uint) ([]OpcionesTransaccion, error) {
