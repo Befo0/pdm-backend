@@ -80,6 +80,11 @@ func (h *AhorroHandler) CreateSavingGoal(c *gin.Context) {
 		return
 	}
 
+	if ahorroRequest.Mes < 1 || ahorroRequest.Mes > 12 {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "Inserta un mes valido"})
+		return
+	}
+
 	userClaims, httpCode, jsonResponse := services.GetClaims(c)
 	if userClaims == nil {
 		c.JSON(httpCode, jsonResponse)
