@@ -5,6 +5,7 @@ import (
 	"pdm-backend/repositories"
 	"pdm-backend/services"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -68,6 +69,14 @@ func (h *AhorroHandler) CreateSavingGoal(c *gin.Context) {
 
 	if err := c.ShouldBindJSON(&ahorroRequest); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "El formato de la peticion esta incorrecto"})
+		return
+	}
+
+	fechaActual := time.Now()
+	mesActual := int(fechaActual.Month())
+
+	if ahorroRequest.Mes < mesActual {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "El mes no puede ser antes del actual"})
 		return
 	}
 
