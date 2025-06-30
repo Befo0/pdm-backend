@@ -23,8 +23,8 @@ func (h *AhorroHandler) GetSavingsData(c *gin.Context) {
 	anioString := c.Query("anio")
 
 	anio, err := strconv.Atoi(anioString)
-	if err != nil || anio < 2000 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Año inválido"})
+	if err != nil || anio < 2025 {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "El año no puede ser antes del actual"})
 		return
 	}
 
