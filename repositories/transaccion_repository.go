@@ -163,7 +163,12 @@ func (r *TransaccionRepository) GetTransactionById(transaccionId *uint) (*Transa
 			WHEN transacciones.tipo_registro_id = 2 THEN tipo_presupuestos.nombre_tipo_presupuesto
 			ELSE ''
 		END AS tipo_gasto,
-		meta_mensuals.monto_meta AS presupuesto,
+		CASE 
+			WHEN sub_categoria_egresos.nombre_sub_categoria = 'Ahorro' THEN meta_mensuals.monto_meta
+			WHEN transacciones.tipo_registro_id = 1 THEN tipo_ingresos.monto_ingreso
+			WHEN transacciones.tipo_registro_id = 2 THEN sub_categoria_egresos.presupuesto_mensual
+			ELSE 0
+		END AS presupuesto,
 		transacciones.monto AS monto,
 		transacciones.descripcion AS descripcion_gasto,
 		users.nombre AS nombre_usuario
