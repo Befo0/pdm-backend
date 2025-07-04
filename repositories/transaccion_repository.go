@@ -80,6 +80,10 @@ func (r *TransaccionRepository) GetOptions(finanzaId uint) ([]OpcionesTransaccio
 		return nil, err
 	}
 
+	for i := range opcionesTransaccion {
+		opcionesTransaccion[i].Opciones = make([]any, 0)
+	}
+
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
